@@ -50,6 +50,7 @@ If you need different values, override them with environment variables:
 ```bash
 PORT=3001
 API_PREFIX=market
+JWT_SECRET=replace-with-a-long-random-secret
 ```
 
 ```bash

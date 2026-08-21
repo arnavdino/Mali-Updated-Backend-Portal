@@ -7,22 +7,21 @@ import { HelpersModule } from 'src/helpers/helpers.module';
 import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { requireJwtSecret } from './jwt.config';
 import { JwtStrategy } from './jwt.strategy';
 import { LocalStrategy } from './local.strategy';
 import { Otp } from './otp.entity';
 
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([Otp]),
     UsersModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          configService.get<string>('SECRET_KEY') ||
-          configService.get<string>('JWT_KEY'),
+        secret: requireJwtSecret(configService),
       }),
       inject: [ConfigService],
     }),

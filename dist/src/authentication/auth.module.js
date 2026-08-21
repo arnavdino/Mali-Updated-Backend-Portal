@@ -16,6 +16,7 @@ const helpers_module_1 = require("../helpers/helpers.module");
 const users_module_1 = require("../users/users.module");
 const auth_controller_1 = require("./auth.controller");
 const auth_service_1 = require("./auth.service");
+const jwt_config_1 = require("./jwt.config");
 const jwt_strategy_1 = require("./jwt.strategy");
 const local_strategy_1 = require("./local.strategy");
 const otp_entity_1 = require("./otp.entity");
@@ -24,15 +25,14 @@ let AuthModule = class AuthModule {
 AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            config_1.ConfigModule,
             typeorm_1.TypeOrmModule.forFeature([otp_entity_1.Otp]),
             users_module_1.UsersModule,
             passport_1.PassportModule,
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],
                 useFactory: (configService) => ({
-                    secret: configService.get('JWT_SECRET') ||
-                        configService.get('SECRET_KEY') ||
-                        configService.get('JWT_KEY'),
+                    secret: (0, jwt_config_1.requireJwtSecret)(configService),
                 }),
                 inject: [config_1.ConfigService],
             }),
