@@ -1,0 +1,79 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.initMigration1718485472506 = void 0;
+class initMigration1718485472506 {
+    constructor() {
+        this.name = 'initMigration1718485472506';
+    }
+    async up(queryRunner) {
+        await queryRunner.query(`CREATE TABLE \`otp\` (\`id\` int NOT NULL AUTO_INCREMENT, \`email\` varchar(255) NULL, \`code\` varchar(255) NOT NULL, \`created\` bigint NOT NULL, UNIQUE INDEX \`IDX_463cf01e0ea83ad57391fd4e1d\` (\`email\`), UNIQUE INDEX \`IDX_f6f87548102f5848e26035bde0\` (\`code\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`role\` (\`id\` int NOT NULL AUTO_INCREMENT, \`permissions\` json NOT NULL, \`name\` varchar(255) NOT NULL, \`description\` varchar(255) NOT NULL, \`custom\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`user_settings\` (\`id\` int NOT NULL AUTO_INCREMENT, \`push_enabled\` tinyint NOT NULL DEFAULT 0, \`updated_enabled\` tinyint NOT NULL DEFAULT 0, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`location\` (\`id\` int NOT NULL AUTO_INCREMENT, \`street\` varchar(255) NOT NULL, \`community\` varchar(255) NOT NULL, \`city\` varchar(255) NOT NULL, \`state\` varchar(255) NOT NULL, \`zip\` varchar(255) NOT NULL, \`country\` varchar(255) NOT NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`user\` (\`id\` varchar(255) NOT NULL, \`external_id\` varchar(255) NOT NULL, \`fname\` varchar(255) NOT NULL, \`lname\` varchar(255) NOT NULL, \`phone\` varchar(255) NOT NULL, \`dob\` varchar(255) NOT NULL, \`age\` int NOT NULL, \`organization\` varchar(255) NOT NULL, \`email\` varchar(255) NOT NULL, \`password\` varchar(255) NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`image_url\` varchar(255) NULL, \`verified\` tinyint NOT NULL DEFAULT 0, \`gender\` varchar(255) NULL, \`nina\` varchar(255) NULL, \`num_of_children\` int NOT NULL DEFAULT '0', \`marital_status\` varchar(255) NOT NULL DEFAULT '', \`language\` varchar(255) NOT NULL DEFAULT 'en', \`deleted\` tinyint NOT NULL DEFAULT 0, \`main_crop\` varchar(255) NOT NULL, \`secondary_crop\` varchar(255) NULL, \`other_products\` json NOT NULL, \`live_stock_farming\` varchar(255) NOT NULL, \`small_trade\` varchar(255) NOT NULL, \`profession\` varchar(255) NOT NULL, \`means_of_production\` varchar(255) NOT NULL, \`means_of_transport\` varchar(255) NOT NULL, \`financial_education\` varchar(255) NOT NULL, \`access_to_credit\` varchar(255) NOT NULL, \`access_to_insurance\` varchar(255) NOT NULL, \`access_to_gap\` varchar(255) NOT NULL, \`total_area\` int NOT NULL, \`total_used_area\` int NOT NULL, \`cultivated_area\` int NOT NULL, \`actual_area\` int NOT NULL, \`property_status\` varchar(255) NOT NULL, \`longitude\` decimal NOT NULL, \`latitude\` decimal NOT NULL, \`forcasted_surface_area\` int NOT NULL, \`authorized_surface_area\` int NOT NULL, \`role_id\` int NULL, \`location_id\` int NULL, \`creator_id\` varchar(255) NULL, UNIQUE INDEX \`IDX_d9479cbc9c65660b7cf9b65795\` (\`external_id\`), UNIQUE INDEX \`IDX_e12875dfb3b1d92d7d7c5377e2\` (\`email\`), UNIQUE INDEX \`REL_37bfb01591406f0fefaed6799a\` (\`location_id\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`event\` (\`id\` int NOT NULL AUTO_INCREMENT, \`event_name\` varchar(255) NOT NULL, \`data\` varchar(255) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`user_id\` varchar(255) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`vendor\` (\`id\` varchar(255) NOT NULL, \`name\` varchar(255) NOT NULL, \`manager_name\` varchar(255) NOT NULL, \`organization\` varchar(255) NOT NULL, \`method_of_payment\` varchar(255) NOT NULL, \`method_of_delivery\` varchar(255) NOT NULL, \`method_of_supply\` varchar(255) NOT NULL, \`phone\` varchar(255) NOT NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`product\` (\`id\` varchar(255) NOT NULL, \`name\` varchar(255) NOT NULL, \`price\` float NOT NULL DEFAULT '0', \`description\` varchar(255) NOT NULL, \`long_description\` text NULL, \`status\` varchar(255) NOT NULL DEFAULT 'published', \`type\` varchar(255) NOT NULL DEFAULT 'product', \`presentation\` varchar(255) NOT NULL DEFAULT 'none', \`num_avail\` int NOT NULL, \`num_left\` int NOT NULL, \`image_url\` varchar(255) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`sections\` json NULL, \`level\` varchar(255) NOT NULL DEFAULT 'product', \`vendor_id\` varchar(255) NULL, \`created_by\` varchar(255) NULL, \`parent_id\` varchar(255) NULL, INDEX \`IDX_7c98c89fedbeaa68a2434b9999\` (\`level\`), UNIQUE INDEX \`product_name_per_type\` (\`name\`, \`type\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`promotion\` (\`id\` varchar(255) NOT NULL, \`name\` varchar(255) NOT NULL, \`description\` varchar(255) NOT NULL, \`is_first_page\` tinyint NOT NULL DEFAULT 0, \`image_url\` varchar(255) NOT NULL, \`action\` varchar(255) NOT NULL, \`discount\` int NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`status\` varchar(255) NOT NULL DEFAULT 'published', \`created_by\` varchar(255) NULL, \`product_id\` varchar(255) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`purchase_product\` (\`id\` int NOT NULL AUTO_INCREMENT, \`quantity\` int NOT NULL, \`total\` float NOT NULL, \`state\` varchar(255) NOT NULL, \`taxes\` float NOT NULL, \`notes\` text NULL, \`product_id\` varchar(255) NULL, \`purchase_id\` varchar(255) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`purchase\` (\`id\` varchar(255) NOT NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`state\` varchar(255) NOT NULL, \`taxes\` float NOT NULL, \`total\` float NOT NULL, \`charge_id\` varchar(255) NOT NULL DEFAULT '', \`purchased_by\` varchar(255) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`warehouse\` (\`id\` int NOT NULL AUTO_INCREMENT, \`name\` varchar(255) NOT NULL, \`legal_form\` varchar(255) NOT NULL, \`head_office\` varchar(255) NOT NULL, \`capital\` varchar(255) NOT NULL, \`legal_rep\` varchar(255) NOT NULL, \`phone\` varchar(255) NOT NULL, \`receipt_number\` varchar(255) NOT NULL, \`members\` int NOT NULL, \`villages_summary\` int NOT NULL, \`members_summary\` int NOT NULL, \`potentail_area_summary\` int NOT NULL, \`cultivated_area_summary\` int NOT NULL, \`forecast_campaign_areas_summary\` int NOT NULL, \`area_forecast_country_side_summary\` int NOT NULL, \`are_of_forecast_collective_fields\` int NOT NULL, \`area_of_collective_fields_exploited\` int NOT NULL, \`total_production\` int NOT NULL, \`collectives_exploited\` int NOT NULL, \`storage\` int NOT NULL, \`weighing_equipment\` varchar(255) NOT NULL, \`blowing_equipment\` varchar(255) NOT NULL, \`means_of_transportation\` varchar(255) NOT NULL, \`distance_from_centralization_location\` int NOT NULL, \`distance_from_factory\` int NOT NULL, \`marketed_production\` int NOT NULL, \`turn_over\` int NOT NULL, \`fixed_charge_with_tax\` int NOT NULL, \`net_margin\` int NOT NULL, \`management_of_commitments\` int NOT NULL, \`access_to_financing\` int NOT NULL, \`other_products\` json NOT NULL, \`other_agr\` json NOT NULL, \`location_id\` int NULL, UNIQUE INDEX \`REL_8b5305b2492ac33409546e4aa0\` (\`location_id\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`warehouse_manager\` (\`id\` varchar(255) NOT NULL, \`external_id\` varchar(255) NOT NULL, \`fname\` varchar(255) NOT NULL, \`lname\` varchar(255) NOT NULL, \`phone\` varchar(255) NOT NULL, \`dob\` varchar(255) NOT NULL, \`age\` int NOT NULL, \`schooled\` tinyint NOT NULL, \`organization\` int NOT NULL, \`email\` varchar(255) NOT NULL, \`password\` varchar(255) NULL, \`created_at\` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`image_url\` varchar(255) NULL, \`gender\` varchar(255) NULL, \`nina\` varchar(255) NULL, \`num_of_children\` int NOT NULL DEFAULT '0', \`marital_status\` varchar(255) NOT NULL DEFAULT '', \`language\` varchar(255) NOT NULL DEFAULT 'en', \`deleted\` tinyint NOT NULL DEFAULT 0, \`literacy_level\` varchar(255) NOT NULL, \`total_products\` int NOT NULL, \`other_income_activities\` json NOT NULL, \`facilitation_activity\` json NOT NULL, \`other_suppliers\` json NOT NULL, \`local_organizations\` int NOT NULL, \`infrastructure\` json NOT NULL, \`logistics_and_production_means\` json NOT NULL, \`surface_area_of_farm\` int NOT NULL, \`status\` varchar(255) NOT NULL, \`location_id\` int NULL, UNIQUE INDEX \`IDX_a93b1b83f4f78b99e9c41ac207\` (\`external_id\`), UNIQUE INDEX \`IDX_2fab7864ff7c3c8443bd60fe1a\` (\`email\`), UNIQUE INDEX \`REL_088b6ae95fb9ce5f2f480f1996\` (\`location_id\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`ALTER TABLE \`user\` ADD CONSTRAINT \`FK_fb2e442d14add3cefbdf33c4561\` FOREIGN KEY (\`role_id\`) REFERENCES \`role\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`user\` ADD CONSTRAINT \`FK_37bfb01591406f0fefaed6799a0\` FOREIGN KEY (\`location_id\`) REFERENCES \`location\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`user\` ADD CONSTRAINT \`FK_b2cb578bbb4f0982ee3b842b787\` FOREIGN KEY (\`creator_id\`) REFERENCES \`user\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`event\` ADD CONSTRAINT \`FK_e6358bd3df1b2874637dca92bcf\` FOREIGN KEY (\`user_id\`) REFERENCES \`user\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`product\` ADD CONSTRAINT \`FK_0539bfedcb00e1f04dd6d3df10a\` FOREIGN KEY (\`vendor_id\`) REFERENCES \`vendor\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`product\` ADD CONSTRAINT \`FK_b5effca691499d21c5ec683ced6\` FOREIGN KEY (\`created_by\`) REFERENCES \`user\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`product\` ADD CONSTRAINT \`FK_6936ca2c9e4602107a0f0036ffc\` FOREIGN KEY (\`parent_id\`) REFERENCES \`product\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`promotion\` ADD CONSTRAINT \`FK_4e59a983b6cb7e37b0df914f31b\` FOREIGN KEY (\`created_by\`) REFERENCES \`user\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`promotion\` ADD CONSTRAINT \`FK_63567e833c47688b0d2a1e40ceb\` FOREIGN KEY (\`product_id\`) REFERENCES \`product\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`purchase_product\` ADD CONSTRAINT \`FK_5de05b42aeedcd8565a7f1061e7\` FOREIGN KEY (\`product_id\`) REFERENCES \`product\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`purchase_product\` ADD CONSTRAINT \`FK_2c3ae950b4eaefc4c65747f018e\` FOREIGN KEY (\`purchase_id\`) REFERENCES \`purchase\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`purchase\` ADD CONSTRAINT \`FK_8e0617d580acaefbbfb71f710d4\` FOREIGN KEY (\`purchased_by\`) REFERENCES \`user\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`warehouse\` ADD CONSTRAINT \`FK_8b5305b2492ac33409546e4aa08\` FOREIGN KEY (\`location_id\`) REFERENCES \`location\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`warehouse_manager\` ADD CONSTRAINT \`FK_088b6ae95fb9ce5f2f480f19969\` FOREIGN KEY (\`location_id\`) REFERENCES \`location\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+    }
+    async down(queryRunner) {
+        await queryRunner.query(`ALTER TABLE \`warehouse_manager\` DROP FOREIGN KEY \`FK_088b6ae95fb9ce5f2f480f19969\``);
+        await queryRunner.query(`ALTER TABLE \`warehouse\` DROP FOREIGN KEY \`FK_8b5305b2492ac33409546e4aa08\``);
+        await queryRunner.query(`ALTER TABLE \`purchase\` DROP FOREIGN KEY \`FK_8e0617d580acaefbbfb71f710d4\``);
+        await queryRunner.query(`ALTER TABLE \`purchase_product\` DROP FOREIGN KEY \`FK_2c3ae950b4eaefc4c65747f018e\``);
+        await queryRunner.query(`ALTER TABLE \`purchase_product\` DROP FOREIGN KEY \`FK_5de05b42aeedcd8565a7f1061e7\``);
+        await queryRunner.query(`ALTER TABLE \`promotion\` DROP FOREIGN KEY \`FK_63567e833c47688b0d2a1e40ceb\``);
+        await queryRunner.query(`ALTER TABLE \`promotion\` DROP FOREIGN KEY \`FK_4e59a983b6cb7e37b0df914f31b\``);
+        await queryRunner.query(`ALTER TABLE \`product\` DROP FOREIGN KEY \`FK_6936ca2c9e4602107a0f0036ffc\``);
+        await queryRunner.query(`ALTER TABLE \`product\` DROP FOREIGN KEY \`FK_b5effca691499d21c5ec683ced6\``);
+        await queryRunner.query(`ALTER TABLE \`product\` DROP FOREIGN KEY \`FK_0539bfedcb00e1f04dd6d3df10a\``);
+        await queryRunner.query(`ALTER TABLE \`event\` DROP FOREIGN KEY \`FK_e6358bd3df1b2874637dca92bcf\``);
+        await queryRunner.query(`ALTER TABLE \`user\` DROP FOREIGN KEY \`FK_b2cb578bbb4f0982ee3b842b787\``);
+        await queryRunner.query(`ALTER TABLE \`user\` DROP FOREIGN KEY \`FK_37bfb01591406f0fefaed6799a0\``);
+        await queryRunner.query(`ALTER TABLE \`user\` DROP FOREIGN KEY \`FK_fb2e442d14add3cefbdf33c4561\``);
+        await queryRunner.query(`DROP INDEX \`REL_088b6ae95fb9ce5f2f480f1996\` ON \`warehouse_manager\``);
+        await queryRunner.query(`DROP INDEX \`IDX_2fab7864ff7c3c8443bd60fe1a\` ON \`warehouse_manager\``);
+        await queryRunner.query(`DROP INDEX \`IDX_a93b1b83f4f78b99e9c41ac207\` ON \`warehouse_manager\``);
+        await queryRunner.query(`DROP TABLE \`warehouse_manager\``);
+        await queryRunner.query(`DROP INDEX \`REL_8b5305b2492ac33409546e4aa0\` ON \`warehouse\``);
+        await queryRunner.query(`DROP TABLE \`warehouse\``);
+        await queryRunner.query(`DROP TABLE \`purchase\``);
+        await queryRunner.query(`DROP TABLE \`purchase_product\``);
+        await queryRunner.query(`DROP TABLE \`promotion\``);
+        await queryRunner.query(`DROP INDEX \`product_name_per_type\` ON \`product\``);
+        await queryRunner.query(`DROP INDEX \`IDX_7c98c89fedbeaa68a2434b9999\` ON \`product\``);
+        await queryRunner.query(`DROP TABLE \`product\``);
+        await queryRunner.query(`DROP TABLE \`vendor\``);
+        await queryRunner.query(`DROP TABLE \`event\``);
+        await queryRunner.query(`DROP INDEX \`REL_37bfb01591406f0fefaed6799a\` ON \`user\``);
+        await queryRunner.query(`DROP INDEX \`IDX_e12875dfb3b1d92d7d7c5377e2\` ON \`user\``);
+        await queryRunner.query(`DROP INDEX \`IDX_d9479cbc9c65660b7cf9b65795\` ON \`user\``);
+        await queryRunner.query(`DROP TABLE \`user\``);
+        await queryRunner.query(`DROP TABLE \`location\``);
+        await queryRunner.query(`DROP TABLE \`user_settings\``);
+        await queryRunner.query(`DROP TABLE \`role\``);
+        await queryRunner.query(`DROP INDEX \`IDX_f6f87548102f5848e26035bde0\` ON \`otp\``);
+        await queryRunner.query(`DROP INDEX \`IDX_463cf01e0ea83ad57391fd4e1d\` ON \`otp\``);
+        await queryRunner.query(`DROP TABLE \`otp\``);
+    }
+}
+exports.initMigration1718485472506 = initMigration1718485472506;
+//# sourceMappingURL=1718485472506-init-migration.js.map

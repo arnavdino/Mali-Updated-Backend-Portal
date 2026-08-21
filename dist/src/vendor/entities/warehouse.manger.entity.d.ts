@@ -1,0 +1,32 @@
+import { LocationEntity } from 'src/users/location.entity';
+import { Warehouse } from './warehouse.entity';
+export declare class WarehouseManager {
+    id: string;
+    fname: string;
+    lname: string;
+    phone: string;
+    dob: string;
+    age: number;
+    schooled: boolean;
+    organization: number;
+    createdAt: Date;
+    gender: string;
+    nina: string;
+    numOfChildren: number;
+    maritalStatus: string;
+    language: string;
+    location: LocationEntity;
+    deletedAt: Date;
+    literacyLevel: string;
+    totalProducts: number;
+    otherIncomActivities: string;
+    facilitationActivity: string;
+    otherSuppliers: string;
+    localOrganizations: number;
+    infrastructure: string;
+    logisticsAndProductionMeans: string;
+    surfaceAreaOfFarm: number;
+    status: string;
+    headquarters: string;
+    warehouse: Warehouse;
+}
