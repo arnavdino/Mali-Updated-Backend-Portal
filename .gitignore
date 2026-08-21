@@ -1,0 +1,7 @@
+# Local environment configuration and credentials
+.env
+.env.override
+.env.aws
+
+# OS-generated files
+.DS_Store
