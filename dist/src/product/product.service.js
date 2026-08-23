@@ -360,11 +360,23 @@ let ProductService = class ProductService {
         return allProducts.map((p) => this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto));
     }
     async getKitComponents() {
+        const approvedComponentNames = [
+            'npk',
+            'uree',
+            'urea',
+            'urée',
+            'herbicide',
+            'insecticide',
+            'appui conseil',
+        ];
         return this.productRepo
             .createQueryBuilder('product')
             .where('product.status = :status', { status: product_entity_1.ProductStatus.ACTIVE })
             .andWhere('product.productKind IN (:...kinds)', {
             kinds: [product_entity_1.ProductKind.ITEM, product_entity_1.ProductKind.SERVICE],
+        })
+            .andWhere('LOWER(product.name) IN (:...names)', {
+            names: approvedComponentNames,
         })
             .select([
             'product.id',

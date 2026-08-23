@@ -455,11 +455,24 @@ export class ProductService {
   }
 
   async getKitComponents() {
+    const approvedComponentNames = [
+      'npk',
+      'uree',
+      'urea',
+      'urée',
+      'herbicide',
+      'insecticide',
+      'appui conseil',
+    ];
+
     return this.productRepo
       .createQueryBuilder('product')
       .where('product.status = :status', { status: ProductStatus.ACTIVE })
       .andWhere('product.productKind IN (:...kinds)', {
         kinds: [ProductKind.ITEM, ProductKind.SERVICE],
+      })
+      .andWhere('LOWER(product.name) IN (:...names)', {
+        names: approvedComponentNames,
       })
       .select([
         'product.id',
