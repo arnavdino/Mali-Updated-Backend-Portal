@@ -27,16 +27,9 @@ let KitsService = class KitsService {
         this.productRepo = productRepo;
     }
     async create(user, dto) {
-        const componentIds = dto.components.map((component) => component.productId);
-        if (new Set(componentIds).size !== componentIds.length) {
+        const componentNames = dto.components.map((component) => component.componentName.trim().toLowerCase());
+        if (new Set(componentNames).size !== componentNames.length) {
             throw new common_1.BadRequestException('A kit component can only be included once.');
-        }
-        const components = await this.productRepo.find({ where: { id: (0, typeorm_2.In)(componentIds) } });
-        if (components.length !== componentIds.length) {
-            throw new common_1.BadRequestException('One or more kit components do not exist.');
-        }
-        if (components.some((component) => component.productKind === product_entity_1.ProductKind.KIT)) {
-            throw new common_1.BadRequestException('A kit cannot contain another kit.');
         }
         if (await this.kitRepo.findOne({ where: { reference: dto.reference } })) {
             throw new common_1.BadRequestException(`Kit reference "${dto.reference}" already exists.`);
@@ -52,7 +45,7 @@ let KitsService = class KitsService {
         await this.kitRepo.save(kit);
         await this.componentRepo.save(dto.components.map((component, index) => this.componentRepo.create({
             kit: { id: kit.id },
-            product: { id: component.productId },
+            componentName: component.componentName,
             quantityPerKit: component.quantityPerKit,
             unit: component.unit,
             displayOrder: index,

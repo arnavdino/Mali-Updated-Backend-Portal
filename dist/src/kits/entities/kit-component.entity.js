@@ -30,6 +30,10 @@ __decorate([
     __metadata("design:type", product_entity_1.Product)
 ], KitComponent.prototype, "product", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'component_name' }),
+    __metadata("design:type", String)
+], KitComponent.prototype, "componentName", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'quantity_per_kit', type: 'decimal', precision: 12, scale: 3 }),
     __metadata("design:type", String)
 ], KitComponent.prototype, "quantityPerKit", void 0);

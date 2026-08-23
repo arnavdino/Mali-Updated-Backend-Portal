@@ -4,7 +4,7 @@ import { ArrayMinSize, IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsS
 export class KitComponentDto {
   @IsString()
   @IsNotEmpty()
-  productId: string;
+  componentName: string;
 
   @IsNumber()
   quantityPerKit: number;

@@ -15,6 +15,9 @@ export class KitComponent {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
+  @Column({ name: 'component_name' })
+  componentName: string;
+
   @Column({ name: 'quantity_per_kit', type: 'decimal', precision: 12, scale: 3 })
   quantityPerKit: string;
 

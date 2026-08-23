@@ -4,6 +4,7 @@ export declare class KitComponent {
     id: number;
     kit: Kit;
     product: Product;
+    componentName: string;
     quantityPerKit: string;
     unit: string;
     displayOrder: number;

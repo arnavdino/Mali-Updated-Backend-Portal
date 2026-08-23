@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product, ProductKind, ProductStatus, Level } from 'src/product/entities/product.entity';
 import { User } from 'src/users/user.entity';
 import { v4 as uuidv4 } from 'uuid';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateKitDto } from './dto/create-kit.dto';
 import { KitComponent } from './entities/kit-component.entity';
 import { Kit } from './entities/kit.entity';
@@ -17,17 +17,9 @@ export class KitsService {
   ) {}
 
   async create(user: User, dto: CreateKitDto) {
-    const componentIds = dto.components.map((component) => component.productId);
-    if (new Set(componentIds).size !== componentIds.length) {
+    const componentNames = dto.components.map((component) => component.componentName.trim().toLowerCase());
+    if (new Set(componentNames).size !== componentNames.length) {
       throw new BadRequestException('A kit component can only be included once.');
-    }
-
-    const components = await this.productRepo.find({ where: { id: In(componentIds) } });
-    if (components.length !== componentIds.length) {
-      throw new BadRequestException('One or more kit components do not exist.');
-    }
-    if (components.some((component) => component.productKind === ProductKind.KIT)) {
-      throw new BadRequestException('A kit cannot contain another kit.');
     }
     if (await this.kitRepo.findOne({ where: { reference: dto.reference } })) {
       throw new BadRequestException(`Kit reference "${dto.reference}" already exists.`);
@@ -53,7 +45,7 @@ export class KitsService {
     await this.kitRepo.save(kit);
     await this.componentRepo.save(dto.components.map((component, index) => this.componentRepo.create({
       kit: { id: kit.id } as Kit,
-      product: { id: component.productId } as Product,
+      componentName: component.componentName,
       quantityPerKit: component.quantityPerKit as any,
       unit: component.unit,
       displayOrder: index,

@@ -1,5 +1,5 @@
 export declare class KitComponentDto {
-    productId: string;
+    componentName: string;
     quantityPerKit: number;
     unit: string;
 }
