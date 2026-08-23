@@ -30,6 +30,7 @@ const promotion_module_1 = require("./promotion/promotion.module");
 const analytics_module_1 = require("./analytics/analytics.module");
 const vendor_module_1 = require("./vendor/vendor.module");
 const transactions_module_1 = require("./transactions/transactions.module");
+const kits_module_1 = require("./kits/kits.module");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -60,7 +61,8 @@ AppModule = __decorate([
             promotion_module_1.PromotionModule,
             analytics_module_1.AnalyticsModule,
             vendor_module_1.VendorModule,
-            transactions_module_1.TransactionsModule
+            transactions_module_1.TransactionsModule,
+            kits_module_1.KitsModule
         ],
         controllers: [app_controller_1.AppController],
         providers: [
