@@ -10,7 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var Product_1;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Product = exports.Level = exports.ProductStatus = exports.Presentation = void 0;
+exports.Product = exports.ProductKind = exports.Level = exports.ProductStatus = exports.Presentation = void 0;
 const classes_1 = require("@automapper/classes");
 const user_entity_1 = require("../../users/user.entity");
 const vendor_entity_1 = require("../../vendor/entities/vendor.entity");
@@ -32,6 +32,12 @@ var Level;
     Level["PRODUCT"] = "product";
     Level["SUB_CATEGORY"] = "sub_category";
 })(Level = exports.Level || (exports.Level = {}));
+var ProductKind;
+(function (ProductKind) {
+    ProductKind["ITEM"] = "ITEM";
+    ProductKind["KIT"] = "KIT";
+    ProductKind["SERVICE"] = "SERVICE";
+})(ProductKind = exports.ProductKind || (exports.ProductKind = {}));
 let Product = Product_1 = class Product {
 };
 __decorate([
@@ -84,6 +90,16 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'type', default: 'product' }),
     __metadata("design:type", String)
 ], Product.prototype, "type", void 0);
+__decorate([
+    (0, classes_1.AutoMap)(),
+    (0, typeorm_1.Column)({ name: 'product_kind', default: ProductKind.ITEM }),
+    __metadata("design:type", String)
+], Product.prototype, "productKind", void 0);
+__decorate([
+    (0, classes_1.AutoMap)(),
+    (0, typeorm_1.Column)({ name: 'tracks_inventory', default: true }),
+    __metadata("design:type", Boolean)
+], Product.prototype, "tracksInventory", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
     (0, typeorm_1.Column)({ name: 'presentation', default: Presentation.NONE }),

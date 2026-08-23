@@ -55,4 +55,5 @@ export declare class ProductService {
     removeBatch(ids: string[]): Promise<string>;
     changeStateBatch(ids: string[], state: ProductStatus): Promise<string>;
     searchCategories(search: string): Promise<CreateProductDto[]>;
+    getKitComponents(): Promise<Product[]>;
 }

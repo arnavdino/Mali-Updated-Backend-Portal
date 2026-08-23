@@ -39,6 +39,9 @@ let ProductAdminController = ProductAdminController_1 = class ProductAdminContro
     searchCategories(search, res, req) {
         return this.helpersService.formatResponse(this.logger, this.productService.searchCategories(search), res, `get categories for user ${req.user.id} of search ${search}`);
     }
+    getKitComponents(res, req) {
+        return this.helpersService.formatResponse(this.logger, this.productService.getKitComponents(), res, `get kit components for user ${req.user.id}`);
+    }
     findCategories(res, req, filter, parentId, include) {
         return this.helpersService.formatResponse(this.logger, this.productService.getCategories(filter, parentId, include), res, `get all categories for admin ${req.user.id} `);
     }
@@ -85,6 +88,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], ProductAdminController.prototype, "searchCategories", null);
+__decorate([
+    (0, common_1.Get)('components'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.read, permissions_1.PermissionSubject.product)),
+    __param(0, (0, common_1.Response)()),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], ProductAdminController.prototype, "getKitComponents", null);
 __decorate([
     (0, common_1.Get)('categories'),
     (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),

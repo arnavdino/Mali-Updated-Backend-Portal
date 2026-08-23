@@ -14,6 +14,11 @@ export declare enum Level {
     PRODUCT = "product",
     SUB_CATEGORY = "sub_category"
 }
+export declare enum ProductKind {
+    ITEM = "ITEM",
+    KIT = "KIT",
+    SERVICE = "SERVICE"
+}
 export declare class Product {
     id: string;
     name: string;
@@ -25,6 +30,8 @@ export declare class Product {
     longDescription: string;
     status: string;
     type: string;
+    productKind: ProductKind;
+    tracksInventory: boolean;
     presentation: Presentation;
     numAvail: number;
     numLeft: number;
