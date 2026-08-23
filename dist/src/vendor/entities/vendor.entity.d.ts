@@ -1,0 +1,33 @@
+import { Product, ProductStatus } from 'src/product/entities/product.entity';
+import { LocationEntity } from 'src/users/location.entity';
+import { Warehouse } from './warehouse.entity';
+export declare class Vendor {
+    id: string;
+    name: string;
+    managerName: string;
+    products: Product[];
+    organization: string;
+    methodOfPayment: string;
+    methodOfDelivery: string;
+    methodOfSupply: string;
+    phone: string;
+    createdAt: Date;
+    status: ProductStatus;
+    deletedAt: Date;
+    transportContract: string;
+    baseServices: string;
+    seeds: string;
+    fertilizer: string;
+    herbicide: string;
+    phytosanitaryProduct: string;
+    plowing: string;
+    semi: string;
+    fertilizerSpreading: string;
+    phytoTreatment: string;
+    smallEquipment: string;
+    insurance: string;
+    location: LocationEntity;
+    warehouse: Warehouse;
+    productSupplied: string;
+    productPurchased: string;
+}

@@ -1,0 +1,31 @@
+import { ProductStatus } from 'src/product/entities/product.entity';
+import { LocationDTO } from 'src/users/location.dto';
+import { WarehouseDTO } from './warehouse.dto';
+export declare class VendorDTO {
+    id: string;
+    name: string;
+    managerName: string;
+    organization: string;
+    methodOfPayment: string;
+    methodOfDelivery: string;
+    methodOfSupply: string;
+    phone: string;
+    createdAt: Date;
+    status: ProductStatus;
+    transportContract: string;
+    baseServices: string;
+    seeds: string;
+    fertilizer: string;
+    herbicide: string;
+    phytosanitaryProduct: string;
+    plowing: string;
+    semi: string;
+    fertilizerSpreading: string;
+    phytoTreatment: string;
+    smallEquipment: string;
+    insurance: string;
+    location: LocationDTO;
+    productSupplied: string;
+    productPurchased: string;
+    warehouse: WarehouseDTO;
+}

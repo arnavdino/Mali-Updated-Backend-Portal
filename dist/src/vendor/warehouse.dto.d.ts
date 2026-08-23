@@ -1,0 +1,37 @@
+import { LocationDTO } from 'src/users/location.dto';
+export declare class WarehouseDTO {
+    id: number;
+    name: string;
+    legalForm: string;
+    headOffice: string;
+    capital: string;
+    legalRep: string;
+    phone: string;
+    receiptNumber: string;
+    members: number;
+    location: LocationDTO;
+    villagesSummary: number;
+    membersSummary: number;
+    potentialAreaSummary: number;
+    cultivatedAreaSummary: number;
+    forecastCampaignAreasSummary: number;
+    areaForecastCountrySideSummary: number;
+    areaOfForecastCollectiveFields: number;
+    areaOfCollectiveFieldsExploited: number;
+    totalProduction: number;
+    collectivesExploited: number;
+    storage: number;
+    weighingEquipment: string;
+    blowingEquipment: string;
+    meansOfTransportation: string;
+    distanceFromCentralizationLocation: number;
+    distanceFromFactory: number;
+    marketedProduction: number;
+    turnOver: number;
+    fixedChargeWithTax: number;
+    netMargin: number;
+    managementOfCommitments: number;
+    accessToFinancing: number;
+    otherProducts: string;
+    otherAgr: string;
+}
