@@ -21,6 +21,7 @@ import { PromotionModule } from './promotion/promotion.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { VendorModule } from './vendor/vendor.module';
 import { TransactionsModule } from './transactions/transactions.module';
+import { KitsModule } from './kits/kits.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { TransactionsModule } from './transactions/transactions.module';
     AnalyticsModule,
     VendorModule,
     TransactionsModule
+    ,KitsModule
   ],
   controllers: [AppController],
   providers: [
