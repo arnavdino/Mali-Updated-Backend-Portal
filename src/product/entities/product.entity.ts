@@ -29,6 +29,11 @@ export enum Level {
   SUB_CATEGORY = 'sub_category',
 }
 
+export enum ProductKind {
+  ITEM = 'ITEM',
+  KIT = 'KIT',
+}
+
 @Entity('product')
 @Unique('product_name_per_type', ['name', 'type'])
 export class Product {
@@ -71,6 +76,10 @@ export class Product {
   @AutoMap()
   @Column({ name: 'type', default: 'product' })
   type: string;
+
+  @AutoMap()
+  @Column({ name: 'product_kind', default: ProductKind.ITEM })
+  productKind: ProductKind;
 
   @AutoMap()
   @Column({ name: 'presentation', default: Presentation.NONE })
