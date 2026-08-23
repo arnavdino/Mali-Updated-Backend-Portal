@@ -4,6 +4,7 @@ import {
   Level,
   Presentation,
   Product,
+  ProductKind,
   ProductStatus,
 } from './entities/product.entity';
 import { Brackets, ILike, In, IsNull, Not, Repository } from 'typeorm';
@@ -451,5 +452,23 @@ export class ProductService {
     return allProducts.map((p) =>
       this.classMapper.map(p, Product, CreateProductDto),
     );
+  }
+
+  async getKitComponents() {
+    return this.productRepo
+      .createQueryBuilder('product')
+      .where('product.status = :status', { status: ProductStatus.ACTIVE })
+      .andWhere('product.productKind IN (:...kinds)', {
+        kinds: [ProductKind.ITEM, ProductKind.SERVICE],
+      })
+      .select([
+        'product.id',
+        'product.name',
+        'product.unit',
+        'product.productKind',
+        'product.tracksInventory',
+      ])
+      .orderBy('product.name', 'ASC')
+      .getMany();
   }
 }

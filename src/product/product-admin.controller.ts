@@ -76,6 +76,20 @@ export class ProductAdminController {
     );
   }
 
+  @Get('components')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.read, PermissionSubject.product),
+  )
+  getKitComponents(@Response() res, @Request() req) {
+    return this.helpersService.formatResponse(
+      this.logger,
+      this.productService.getKitComponents(),
+      res,
+      `get kit components for user ${req.user.id}`,
+    );
+  }
+
   @Get('categories')
   @UseGuards(PoliciesGuard)
   @CheckPolicies((ability) =>

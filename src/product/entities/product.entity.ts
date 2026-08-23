@@ -32,6 +32,7 @@ export enum Level {
 export enum ProductKind {
   ITEM = 'ITEM',
   KIT = 'KIT',
+  SERVICE = 'SERVICE',
 }
 
 @Entity('product')
@@ -80,6 +81,10 @@ export class Product {
   @AutoMap()
   @Column({ name: 'product_kind', default: ProductKind.ITEM })
   productKind: ProductKind;
+
+  @AutoMap()
+  @Column({ name: 'tracks_inventory', default: true })
+  tracksInventory: boolean;
 
   @AutoMap()
   @Column({ name: 'presentation', default: Presentation.NONE })
