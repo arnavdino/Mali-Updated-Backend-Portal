@@ -292,6 +292,7 @@ let ProductService = class ProductService {
             relations: ['parent', 'parent.parent'],
         });
         let product = this.classMapper.map(db, product_entity_1.Product, create_product_dto_1.CreateProductDto);
+        product.productKind = db.productKind;
         product.longDescription = db.longDescription;
         product.sections = db.sections;
         if (product.parent) {

@@ -363,6 +363,7 @@ export class ProductService {
       relations: ['parent', 'parent.parent'],
     });
     let product = this.classMapper.map(db, Product, CreateProductDto);
+    product.productKind = db.productKind;
     product.longDescription = db.longDescription;
     product.sections = db.sections;
     if (product.parent) {
