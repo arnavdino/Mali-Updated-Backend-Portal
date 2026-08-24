@@ -19,6 +19,8 @@ export declare class TransactionsService {
             customer: string;
             vendor: string;
             product: string;
+            productId: string;
+            productKind: import("../product/entities/product.entity").ProductKind;
             warehouse: string;
             unit: string;
             id: string;

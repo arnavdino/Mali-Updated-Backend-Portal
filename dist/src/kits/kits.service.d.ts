@@ -12,4 +12,20 @@ export declare class KitsService {
     create(user: User, dto: CreateKitDto): Promise<{
         id: string;
     }>;
+    findByProductId(productId: string): Promise<{
+        id: string;
+        reference: string;
+        campaign: string;
+        scenario: string;
+        crop: string;
+        coverageHectares: string;
+        unitAdvanceFcfa: string;
+        repaymentQuantity: string;
+        repaymentUnit: string;
+        components: {
+            componentName: string;
+            quantityPerKit: string;
+            unit: string;
+        }[];
+    }>;
 }

@@ -55,4 +55,36 @@ export class KitsService {
     })));
     return { id: product.id };
   }
+
+  async findByProductId(productId: string) {
+    const kit = await this.kitRepo
+      .createQueryBuilder('kit')
+      .leftJoinAndSelect('kit.components', 'component')
+      .where('kit.product_id = :productId', { productId })
+      .andWhere('kit.is_active = :isActive', { isActive: true })
+      .getOne();
+
+    if (!kit) {
+      return null;
+    }
+
+    return {
+      id: kit.id,
+      reference: kit.reference,
+      campaign: kit.campaign,
+      scenario: kit.scenario,
+      crop: kit.crop,
+      coverageHectares: kit.coverageHectares,
+      unitAdvanceFcfa: kit.unitAdvanceFcfa,
+      repaymentQuantity: kit.repaymentQuantity,
+      repaymentUnit: kit.repaymentUnit,
+      components: kit.components
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        .map((component) => ({
+          componentName: component.componentName,
+          quantityPerKit: component.quantityPerKit,
+          unit: component.unit,
+        })),
+    };
+  }
 }

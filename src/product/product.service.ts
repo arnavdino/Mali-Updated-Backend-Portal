@@ -82,6 +82,7 @@ export class ProductService {
         'product.id',
         'product.price',
         'product.rewardRatio',
+        'product.productKind',
         'product.unit',
         'product.description',
         'product.imageUrl',
@@ -90,9 +91,10 @@ export class ProductService {
       ])
       .getMany();
 
-    return allProducts.map((p) =>
-      this.classMapper.map(p, Product, CreateProductDto),
-    );
+    return allProducts.map((p) => ({
+      ...this.classMapper.map(p, Product, CreateProductDto),
+      productKind: p.productKind,
+    }));
   }
 
   async findMain() {

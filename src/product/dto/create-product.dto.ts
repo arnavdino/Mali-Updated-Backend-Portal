@@ -1,6 +1,6 @@
 import { AutoMap } from '@automapper/classes';
 import { UserDTO } from 'src/users/user.dto';
-import { Presentation, ProductStatus } from '../entities/product.entity';
+import { Presentation, ProductKind, ProductStatus } from '../entities/product.entity';
 import { IsEnum, IsOptional } from 'class-validator';
 
 export class CreateProductDto {
@@ -39,6 +39,11 @@ export class CreateProductDto {
   @AutoMap()
   @IsEnum(ProductStatus)
   status: ProductStatus;
+
+  @AutoMap()
+  @IsEnum(ProductKind)
+  @IsOptional()
+  productKind?: ProductKind;
 
   @AutoMap()
   createdBy: UserDTO;

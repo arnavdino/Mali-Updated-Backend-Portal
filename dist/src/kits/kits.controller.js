@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var KitsController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KitsController = void 0;
 const common_1 = require("@nestjs/common");
@@ -20,15 +21,29 @@ const helpers_service_1 = require("../helpers/helpers.service");
 const permissions_1 = require("../permissions/permissions");
 const create_kit_dto_1 = require("./dto/create-kit.dto");
 const kits_service_1 = require("./kits.service");
-let KitsController = class KitsController {
+let KitsController = KitsController_1 = class KitsController {
     constructor(kitsService, helpers) {
         this.kitsService = kitsService;
         this.helpers = helpers;
+        this.logger = new common_1.Logger(KitsController_1.name);
+    }
+    findByProductId(productId, res) {
+        return this.helpers.formatResponse(this.logger, this.kitsService.findByProductId(productId), res, 'get kit by product');
     }
     create(dto, req, res) {
-        return this.helpers.formatResponse(console, this.kitsService.create(req.user, dto), res, 'create kit');
+        return this.helpers.formatResponse(this.logger, this.kitsService.create(req.user, dto), res, 'create kit');
     }
 };
+__decorate([
+    (0, common_1.Get)('product/:productId'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.read, permissions_1.PermissionSubject.product)),
+    __param(0, (0, common_1.Param)('productId')),
+    __param(1, (0, common_1.Response)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], KitsController.prototype, "findByProductId", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
@@ -40,7 +55,7 @@ __decorate([
     __metadata("design:paramtypes", [create_kit_dto_1.CreateKitDto, Object, Object]),
     __metadata("design:returntype", void 0)
 ], KitsController.prototype, "create", null);
-KitsController = __decorate([
+KitsController = KitsController_1 = __decorate([
     (0, common_1.Controller)('admin/kits'),
     __metadata("design:paramtypes", [kits_service_1.KitsService, helpers_service_1.HelpersService])
 ], KitsController);

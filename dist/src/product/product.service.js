@@ -73,6 +73,7 @@ let ProductService = class ProductService {
             'product.id',
             'product.price',
             'product.rewardRatio',
+            'product.productKind',
             'product.unit',
             'product.description',
             'product.imageUrl',
@@ -80,7 +81,7 @@ let ProductService = class ProductService {
             'parent.status',
         ])
             .getMany();
-        return allProducts.map((p) => this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto));
+        return allProducts.map((p) => (Object.assign(Object.assign({}, this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto)), { productKind: p.productKind })));
     }
     async findMain() {
         let featured = await this.productRepo

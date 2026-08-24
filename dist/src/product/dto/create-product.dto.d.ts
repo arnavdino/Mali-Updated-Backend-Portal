@@ -1,5 +1,5 @@
 import { UserDTO } from 'src/users/user.dto';
-import { Presentation, ProductStatus } from '../entities/product.entity';
+import { Presentation, ProductKind, ProductStatus } from '../entities/product.entity';
 export declare class CreateProductDto {
     id: string;
     name: string;
@@ -12,6 +12,7 @@ export declare class CreateProductDto {
     createdAt: Date;
     level: string;
     status: ProductStatus;
+    productKind?: ProductKind;
     createdBy: UserDTO;
     parent: CreateProductDto;
     imageUrl: string;

@@ -65,6 +65,12 @@ __decorate([
 ], CreateProductDto.prototype, "status", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsEnum)(product_entity_1.ProductKind),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "productKind", void 0);
+__decorate([
+    (0, classes_1.AutoMap)(),
     __metadata("design:type", user_dto_1.UserDTO)
 ], CreateProductDto.prototype, "createdBy", void 0);
 __decorate([

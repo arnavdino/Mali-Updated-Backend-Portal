@@ -1,5 +1,5 @@
 import { CreateProductDto } from './dto/create-product.dto';
-import { Product, ProductStatus } from './entities/product.entity';
+import { Presentation, Product, ProductKind, ProductStatus } from './entities/product.entity';
 import { Repository } from 'typeorm';
 import { Mapper } from '@automapper/core';
 import { PromotionService } from 'src/promotion/promotion.service';
@@ -20,7 +20,27 @@ export declare class ProductService {
         unit: string;
         description: string;
     };
-    search(search: string, category?: string): Promise<CreateProductDto[]>;
+    search(search: string, category?: string): Promise<{
+        productKind: ProductKind;
+        id: string;
+        name: string;
+        numAvail: number;
+        description: string;
+        price: number;
+        rewardRatio: number;
+        unit: string;
+        presentation: Presentation;
+        createdAt: Date;
+        level: string;
+        status: ProductStatus;
+        createdBy: import("../users/user.dto").UserDTO;
+        parent: CreateProductDto;
+        imageUrl: string;
+        longDescription: string;
+        sections: {
+            [key: string]: string[];
+        };
+    }[]>;
     findMain(): Promise<{
         mainProducts: any;
         featuredProducts: CreateProductDto[];
