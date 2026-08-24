@@ -35,6 +35,9 @@ export class KitsService {
       ...(dto.categoryId ? { parent: { id: dto.categoryId } as Product } : {}),
     });
 
+    // A kit references its sellable product, so persist the parent before the FK row.
+    await this.productRepo.save(product);
+
     const kit = this.kitRepo.create({
       id: uuidv4(), product, reference: dto.reference, campaign: dto.campaign,
       scenario: dto.scenario, crop: dto.crop, coverageHectares: dto.coverageHectares as any,

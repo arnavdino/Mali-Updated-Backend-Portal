@@ -35,6 +35,7 @@ let KitsService = class KitsService {
             throw new common_1.BadRequestException(`Kit reference "${dto.reference}" already exists.`);
         }
         const product = this.productRepo.create(Object.assign({ id: (0, uuid_1.v4)(), name: dto.name, price: dto.price, description: dto.description || dto.scenario, longDescription: dto.description || null, status: dto.isActive === false ? product_entity_1.ProductStatus.INACTIVE : product_entity_1.ProductStatus.ACTIVE, type: 'product', productKind: product_entity_1.ProductKind.KIT, tracksInventory: false, unit: 'kit', numAvail: 0, numLeft: 0, imageUrl: '', level: product_entity_1.Level.PRODUCT, createdBy: { id: user.id } }, (dto.categoryId ? { parent: { id: dto.categoryId } } : {})));
+        await this.productRepo.save(product);
         const kit = this.kitRepo.create({
             id: (0, uuid_1.v4)(), product, reference: dto.reference, campaign: dto.campaign,
             scenario: dto.scenario, crop: dto.crop, coverageHectares: dto.coverageHectares,
