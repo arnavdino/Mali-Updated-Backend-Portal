@@ -86,22 +86,26 @@ LEFT JOIN product existing
   AND existing.level = 'category'
 WHERE existing.id IS NULL;
 
--- Add product records only for references that do not already have a kit row.
--- Legacy KIT-001 to KIT-003 records may have a different product name but are
--- linked by kit.reference, so they must be updated rather than duplicated.
+-- First give legacy linked products a deterministic temporary name. This avoids
+-- a legacy product such as the KIT-001 product being named "KIT-002" blocking
+-- the creation of the actual KIT-002 product.
+UPDATE product product
+INNER JOIN kit kit ON kit.product_id = product.id
+INNER JOIN pacfis_kit_seed seed ON seed.reference = kit.reference
+SET product.name = CONCAT('__PACFIS_', seed.reference);
+
+-- Add a distinct product for every kit reference that does not already have a
+-- kit row. Temporary names prevent collisions with legacy product names.
 INSERT INTO product
   (id, name, price, reward_ratio, unit, description, long_description, status, type,
    product_kind, tracks_inventory, presentation, num_avail, num_left, image_url, parent_id, level)
-SELECT UUID(), seed.reference, seed.unit_advance, 0, 'kg', seed.reference, seed.composition,
+SELECT UUID(), CONCAT('__PACFIS_', seed.reference), seed.unit_advance, 0, 'kg', seed.reference, seed.composition,
        'active', 'product', 'KIT', 0, 'none', 0, 0, '/lime.svg', category.id, 'product'
 FROM pacfis_kit_seed seed
 INNER JOIN product category
   ON category.name = seed.category_name AND category.level = 'category'
 LEFT JOIN kit existing_kit ON existing_kit.reference = seed.reference
-LEFT JOIN product existing_product
-  ON existing_product.name = seed.reference AND existing_product.type = 'product'
-WHERE existing_kit.id IS NULL
-  AND existing_product.id IS NULL;
+WHERE existing_kit.id IS NULL;
 
 -- Create missing kit rows, then make every seeded kit authoritative.
 INSERT INTO kit
@@ -111,7 +115,7 @@ SELECT UUID(), product.id, seed.reference, '3', seed.scenario, seed.crop,
        seed.coverage_hectares, seed.total_cost, seed.repayment_quantity, 'kg', 1
 FROM pacfis_kit_seed seed
 INNER JOIN product product
-  ON product.name = seed.reference AND product.level = 'product'
+  ON product.name = CONCAT('__PACFIS_', seed.reference) AND product.level = 'product'
 LEFT JOIN kit existing ON existing.reference = seed.reference
 WHERE existing.id IS NULL;
 
@@ -222,19 +226,4 @@ FROM pacfis_component_seed component
 INNER JOIN kit kit ON kit.reference = component.reference;
 
 -- Review these rows before committing. Verify 46 kit rows and their component counts.
-SELECT kit.reference, kit.scenario, kit.crop, kit.coverage_hectares,
-       kit.unit_advance_fcfa AS total_cost, product.price AS unit_advance,
-       kit.repayment_quantity, kit.repayment_unit, product.status,
-       product.presentation, category.name AS category,
-       COUNT(component.id) AS component_count
-FROM kit
-INNER JOIN pacfis_kit_seed seed ON seed.reference = kit.reference
-INNER JOIN product product ON product.id = kit.product_id
-INNER JOIN product category ON category.id = product.parent_id
-LEFT JOIN kit_component component ON component.kit_id = kit.id
-GROUP BY kit.id, kit.reference, kit.scenario, kit.crop, kit.coverage_hectares,
-         kit.unit_advance_fcfa, product.price, kit.repayment_quantity,
-         kit.repayment_unit, product.status, product.presentation, category.name
-ORDER BY kit.reference;
-
-COMMIT;
+a
