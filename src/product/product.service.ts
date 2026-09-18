@@ -153,7 +153,7 @@ export class ProductService {
         coalesce(sum(case when pr.completed_at >= ? and pr.completed_at < ? then pr.amount * pr.quantity + coalesce(pr.fee_1, 0) + coalesce(pr.fee_2, 0) + coalesce(pr.fee_3, 0) else 0 end), 0) as prev
       from transactions pr
       inner join product p on p.id = pr.product_id
-      where pr.status = ? and pr.completed_at >= ? and pr.completed_at < ?
+      where pr.status = ? and p.status = 'active' and pr.completed_at >= ? and pr.completed_at < ?
       group by p.id, p.name
       order by cur desc, p.name asc
       limit 5`,
