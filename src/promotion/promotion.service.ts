@@ -42,7 +42,8 @@ export class PromotionService {
 
   async getProductForPromotions(filter: string) {
     return await this.promotionRepo.query(
-      `select id,name from product where name like '%${filter}%' and parent_id is not null limit 20 `,
+      'select id, name from product where name like ? and parent_id is not null limit 20',
+      [`%${filter || ''}%`],
     );
   }
 
@@ -72,7 +73,7 @@ export class PromotionService {
     if (filter?.includes('"')) {
       throw new BadRequestException('invalid filter');
     }
-    const [results, count] = await this.promotionRepo
+    const query = this.promotionRepo
       .createQueryBuilder('promotion')
       .innerJoin('promotion.product', 'product')
       .skip(meta.rowsPerPage * (meta.page - 1))
@@ -87,16 +88,19 @@ export class PromotionService {
         'product.id',
         'product.name',
       ])
-      .where(
-        `${
-          filter
-            ? filter.includes('_@@')
-              ? ` promotion.status = '${filter.replace('_@@', '')}'`
-              : ` promotion.name like "%${filter}%" `
-            : ''
-        } `,
-      )
-      .getManyAndCount();
+      .where('1 = 1');
+
+    if (filter?.includes('_@@')) {
+      const status = filter.replace('_@@', '');
+      if (!Object.values(ProductStatus).includes(status as ProductStatus)) {
+        throw new BadRequestException('invalid filter');
+      }
+      query.andWhere('promotion.status = :status', { status });
+    } else if (filter) {
+      query.andWhere('promotion.name like :filter', { filter: `%${filter}%` });
+    }
+
+    const [results, count] = await query.getManyAndCount();
 
     let promotions = results.map((p) => {
       return {

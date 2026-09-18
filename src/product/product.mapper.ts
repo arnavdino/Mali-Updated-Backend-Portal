@@ -19,7 +19,7 @@ export class ProductProfile extends AutomapperProfile {
         forMember(
           (dest) => dest.imageUrl,
           mapFrom((src) => {
-            return src.imageUrl || '';
+            return src.imageUrl || '/lime.svg';
           }),
         ),
         forMember(

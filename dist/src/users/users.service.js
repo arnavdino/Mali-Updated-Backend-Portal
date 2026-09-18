@@ -40,6 +40,7 @@ const path = require("path");
 const StreamArray = require("stream-json/streamers/StreamArray");
 const location_entity_1 = require("./location.entity");
 const moment = require("moment-timezone");
+const DEFAULT_CREATED_USER_PASSWORD = 'Farmer2026!';
 let UsersService = UsersService_1 = class UsersService {
     constructor(classMapper, userRepository, roleService) {
         this.classMapper = classMapper;
@@ -85,7 +86,7 @@ let UsersService = UsersService_1 = class UsersService {
         entity.rewardPoints = 0;
         entity.createdBy = { id: creatorId };
         const salt = await bcrypt.genSalt();
-        entity.password = await bcrypt.hash((0, uuid_1.v4)(), salt);
+        entity.password = await bcrypt.hash(DEFAULT_CREATED_USER_PASSWORD, salt);
         entity = await this.userRepository.save(entity);
     }
     async update(user, id) {
@@ -140,8 +141,12 @@ let UsersService = UsersService_1 = class UsersService {
             .andWhere('user.roleId = :roleId', { roleId: role.id });
         if (filter) {
             if (filter.includes('_@@')) {
+                const requestedStatus = filter.replace('_@@', '');
+                if (![interfaces_1.userStatus.ACTIVE, interfaces_1.userStatus.INACTIVE, 'pending'].includes(requestedStatus)) {
+                    throw new common_1.BadRequestException('invalid filter');
+                }
                 qb.andWhere('user.verified = :verified', {
-                    verified: filter.replace('_@@', '') == interfaces_1.userStatus.ACTIVE,
+                    verified: requestedStatus === interfaces_1.userStatus.ACTIVE,
                 });
             }
             else {
@@ -200,6 +205,22 @@ let UsersService = UsersService_1 = class UsersService {
         user.password = await bcrypt.hash(password, salt);
         await this.userRepository.save(user);
     }
+    async changePassword(email, currentPassword, newPassword) {
+        const user = await this.userRepository.findOne({ where: { email } });
+        if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+            throw new common_1.BadRequestException('Current password is incorrect');
+        }
+        if (!((newPassword === null || newPassword === void 0 ? void 0 : newPassword.length) > 7 &&
+            (0, user_dto_1.hasSpecial)(newPassword) &&
+            (0, user_dto_1.hasUpper)(newPassword) &&
+            (0, user_dto_1.hasLower)(newPassword) &&
+            (0, user_dto_1.hasNumber)(newPassword))) {
+            throw new common_1.BadRequestException('Password must contain at least 8 characters, an uppercase letter, a lowercase letter, a number, and a special character');
+        }
+        const salt = await bcrypt.genSalt();
+        user.password = await bcrypt.hash(newPassword, salt);
+        await this.userRepository.save(user);
+    }
     async addImage(id, name) {
         await this.userRepository.update(id, {
             imageUrl: name,
@@ -243,7 +264,13 @@ let UsersService = UsersService_1 = class UsersService {
         return 'ok';
     }
     async changeUsersState({ ids, status }) {
-        await this.userRepository.query(`update user set verified = ${status == 'active' ? true : false} where id in (${ids.map((id) => `'${id}'`).join(',')})`);
+        if (!Array.isArray(ids) || ids.length === 0) {
+            throw new common_1.BadRequestException('At least one user id is required');
+        }
+        if (![interfaces_1.userStatus.ACTIVE, interfaces_1.userStatus.INACTIVE].includes(status)) {
+            throw new common_1.BadRequestException('Invalid user status');
+        }
+        await this.userRepository.update({ id: (0, typeorm_2.In)(ids) }, { verified: status === interfaces_1.userStatus.ACTIVE });
         return 'ok';
     }
     async checkUser(email, pass) {
@@ -283,7 +310,8 @@ let UsersService = UsersService_1 = class UsersService {
     async search(search) {
         let results = await this.userRepository
             .createQueryBuilder('user')
-            .where('user.deleted_at is null and user.fname like :search or user.lname like :search', {
+            .where('user.deleted_at is null')
+            .andWhere('(user.fname like :search or user.lname like :search)', {
             search: `%${search}%`,
         })
             .take(50)

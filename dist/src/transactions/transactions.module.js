@@ -17,12 +17,14 @@ const transactions_service_1 = require("./transactions.service");
 const transactions_controller_1 = require("./transactions.controller");
 const transactions_mapper_1 = require("./transactions.mapper");
 const casl_module_1 = require("../casl/casl.module");
+const product_entity_1 = require("../product/entities/product.entity");
+const user_entity_1 = require("../users/user.entity");
 let TransactionsModule = class TransactionsModule {
 };
 TransactionsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([transactions_entity_1.Transactions]),
+            typeorm_1.TypeOrmModule.forFeature([transactions_entity_1.Transactions, user_entity_1.User, product_entity_1.Product]),
             helpers_module_1.HelpersModule,
             events_module_1.EventsModule,
             casl_module_1.CaslModule,

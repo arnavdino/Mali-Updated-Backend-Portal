@@ -84,24 +84,37 @@ let PurchaseService = class PurchaseService {
         if (meta.rowsPerPage < 0 || meta.page < 0) {
             throw Error('Invalid pagination meta');
         }
-        let where = '';
+        const where = [];
+        const parameters = {};
         if (filter.from) {
-            where = `purchase.createdAt > '${filter.from}'`;
+            where.push('purchase.createdAt > :from');
+            parameters.from = filter.from;
         }
         if (filter.to) {
-            where += `${!!where ? ' and' : ''} purchase.createdAt <  '${filter.to}'`;
+            where.push('purchase.createdAt < :to');
+            parameters.to = filter.to;
         }
         if (filter.type) {
-            where += `${!!where ? ' and' : ''} product.parent = '${filter.type}'`;
+            where.push('product.parent_id = :type');
+            parameters.type = filter.type;
         }
         if (filter.customer) {
-            where += `${!!where ? ' and' : ''} (user.fname like '%${filter.customer}%' or user.lname like '%${filter.customer}%')`;
+            where.push('(user.fname like :customer or user.lname like :customer)');
+            parameters.customer = `%${filter.customer}%`;
         }
         if (filter.id) {
-            where += `${!!where ? ' and' : ''} purchaseProduct.id = ${filter.id}`;
+            const id = Number(filter.id);
+            if (!Number.isInteger(id))
+                throw new common_1.BadRequestException('Invalid purchase id');
+            where.push('purchaseProduct.id = :id');
+            parameters.id = id;
         }
         if (filter.state) {
-            where += `${!!where ? ' and' : ''} purchaseProduct.state = '${filter.state}'`;
+            if (!Object.values(purchase_entity_1.PurchaseState).includes(filter.state)) {
+                throw new common_1.BadRequestException('Invalid purchase status');
+            }
+            where.push('purchaseProduct.state = :state');
+            parameters.state = filter.state;
         }
         const [transactions, count] = await this.transactionRepo
             .createQueryBuilder('purchaseProduct')
@@ -123,7 +136,7 @@ let PurchaseService = class PurchaseService {
             'purchaseProduct.notes',
             'product.name',
         ])
-            .where(where)
+            .where(where.join(' and ') || '1 = 1', parameters)
             .getManyAndCount();
         return {
             transactions: transactions.map((t) => ({

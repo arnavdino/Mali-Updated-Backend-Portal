@@ -20,6 +20,8 @@ const typeorm_1 = require("@nestjs/typeorm");
 const otp_entity_1 = require("./otp.entity");
 const typeorm_2 = require("typeorm");
 const permissions_1 = require("../permissions/permissions");
+const bcrypt = require("bcrypt");
+const crypto_1 = require("crypto");
 let AuthService = class AuthService {
     constructor(userService, jwtService, otpRepository) {
         this.userService = userService;
@@ -51,10 +53,10 @@ let AuthService = class AuthService {
         return await this.login(user);
     }
     async verifyCode(email, code) {
-        let otp = await this.otpRepository.findOne({
-            where: { email, code },
-        });
-        if (!otp || +otp.created + 300000 < new Date().valueOf()) {
+        const otp = await this.otpRepository.findOne({ where: { email } });
+        if (!otp ||
+            +otp.created + 300000 < new Date().valueOf() ||
+            !(await bcrypt.compare(code, otp.code))) {
             throw Error('Invalid validation code!');
         }
         return otp;
@@ -68,9 +70,9 @@ let AuthService = class AuthService {
             otp = new otp_entity_1.Otp();
         }
         otp.created = new Date().valueOf();
-        otp.code = `${Math.floor(Math.random() * 900000) + 100000}`;
+        otp.code = await bcrypt.hash(`${(0, crypto_1.randomInt)(100000, 1000000)}`, 10);
         otp.email = email;
-        this.otpRepository.save(otp);
+        await this.otpRepository.save(otp);
     }
     async createCodeForReset(email) {
         let user = await this.userService.getUserByEmail(email);

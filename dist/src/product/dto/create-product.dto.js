@@ -11,9 +11,15 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateProductDto = void 0;
 const classes_1 = require("@automapper/classes");
-const user_dto_1 = require("../../users/user.dto");
-const product_entity_1 = require("../entities/product.entity");
+const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
+const product_entity_1 = require("../entities/product.entity");
+class ProductParentDto {
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ProductParentDto.prototype, "id", void 0);
 class CreateProductDto {
 }
 __decorate([
@@ -22,26 +28,39 @@ __decorate([
 ], CreateProductDto.prototype, "id", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "name", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "numAvail", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "description", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "price", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateProductDto.prototype, "rewardRatio", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "unit", void 0);
 __decorate([
@@ -56,6 +75,7 @@ __decorate([
 ], CreateProductDto.prototype, "createdAt", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsEnum)(product_entity_1.Level),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "level", void 0);
 __decorate([
@@ -71,22 +91,27 @@ __decorate([
 ], CreateProductDto.prototype, "productKind", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
-    __metadata("design:type", user_dto_1.UserDTO)
-], CreateProductDto.prototype, "createdBy", void 0);
-__decorate([
-    (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => ProductParentDto),
     __metadata("design:type", CreateProductDto)
 ], CreateProductDto.prototype, "parent", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "imageUrl", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "longDescription", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsObject)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], CreateProductDto.prototype, "sections", void 0);
 exports.CreateProductDto = CreateProductDto;

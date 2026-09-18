@@ -117,7 +117,7 @@ __decorate([
 ], Product.prototype, "numLeft", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
-    (0, typeorm_1.Column)({ name: 'image_url' }),
+    (0, typeorm_1.Column)({ name: 'image_url', default: '/lime.svg' }),
     __metadata("design:type", String)
 ], Product.prototype, "imageUrl", void 0);
 __decorate([

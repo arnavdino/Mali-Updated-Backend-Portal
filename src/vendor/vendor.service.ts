@@ -2,7 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { MetaParam } from 'src/common/file/interfaces';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Vendor } from './entities/vendor.entity';
-import { Repository } from 'typeorm';
+import { ProductStatus } from 'src/product/entities/product.entity';
+import { In, Repository } from 'typeorm';
 import { VendorDTO } from './vendor.dto';
 import { InjectMapper } from '@automapper/nestjs';
 import { Mapper } from '@automapper/core';
@@ -34,10 +35,12 @@ export class VendorService {
   }
 
   async changeVendorsState({ ids, status }: { ids: string[]; status: string }) {
-    await this.vendorRepository.query(
-      `update vendor set status = '${status}' where id in (${ids
-        .map((id) => `'${id}'`)
-        .join(',')})`,
+    if (!Array.isArray(ids) || ids.length === 0 || !['active', 'inactive'].includes(status)) {
+      throw new BadRequestException('Invalid vendor status update');
+    }
+    await this.vendorRepository.update(
+      { id: In(ids) },
+      { status: status as ProductStatus },
     );
     //add event here
     return 'ok';
@@ -68,7 +71,7 @@ export class VendorService {
       throw new BadRequestException('invalid filter');
     }
 
-    const [results, count] = await this.vendorRepository
+    const query = this.vendorRepository
       .createQueryBuilder('vendor')
       .skip(meta.rowsPerPage * (meta.page - 1))
       .take(meta.rowsPerPage)
@@ -80,16 +83,22 @@ export class VendorService {
         'vendor.managerName',
         'vendor.deletedAt',
       ])
-      .where(
-        `vendor.deletedAt is null ${
-          filter
-            ? filter.includes('_@@')
-              ? ` and vendor.status = '${filter.replace('_@@', '')}'`
-              : ` and vendor.name like "%${filter}%"`
-            : ''
-        } `,
-      )
-      .getManyAndCount();
+      .where('vendor.deletedAt is null');
+
+    if (filter) {
+      if (filter.includes('_@@')) {
+        const requestedStatus = filter.replace('_@@', '');
+        const status = requestedStatus === 'pending' ? 'inactive' : requestedStatus;
+        if (!['active', 'inactive'].includes(status)) {
+          throw new BadRequestException('invalid filter');
+        }
+        query.andWhere('vendor.status = :status', { status });
+      } else {
+        query.andWhere('vendor.name like :filter', { filter: `%${filter}%` });
+      }
+    }
+
+    const [results, count] = await query.getManyAndCount();
 
     let vendors = results.map((p) =>
       this.classMapper.map(p, Vendor, VendorDTO),

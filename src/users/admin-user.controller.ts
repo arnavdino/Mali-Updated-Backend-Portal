@@ -105,6 +105,10 @@ export class AdminUserController {
   }
 
   @Post('image/:id')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.update, PermissionSubject.user),
+  )
   @UseInterceptors(FileInterceptor('upload'))
   async uploadItem(@Request() req, @Response() res, @UploadedFile() file) {
     return await this.fileService.fileupload(
@@ -117,7 +121,7 @@ export class AdminUserController {
   @Delete(':id')
   @UseGuards(PoliciesGuard)
   @CheckPolicies((ability) =>
-    ability.can(PermissionAction.delete, PermissionSubject.user),
+    ability.can(PermissionAction.update, PermissionSubject.user),
   )
   async deleteUser(@Request() req, @Response() res) {
     return this.appService.formatResponse(

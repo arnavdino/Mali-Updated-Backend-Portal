@@ -121,6 +121,8 @@ __decorate([
 ], AdminUserController.prototype, "verifyUser", null);
 __decorate([
     (0, common_1.Post)('image/:id'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.update, permissions_1.PermissionSubject.user)),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('upload')),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Response)()),
@@ -132,7 +134,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
-    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.delete, permissions_1.PermissionSubject.user)),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.update, permissions_1.PermissionSubject.user)),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Response)()),
     __metadata("design:type", Function),

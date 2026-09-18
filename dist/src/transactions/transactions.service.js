@@ -22,20 +22,56 @@ const nestjs_1 = require("@automapper/nestjs");
 const config_1 = require("@nestjs/config");
 const uuid_1 = require("uuid");
 const user_entity_1 = require("../users/user.entity");
+const product_entity_1 = require("../product/entities/product.entity");
 let TransactionsService = class TransactionsService {
-    constructor(transactionRepo, userRepository, configService, classMapper) {
+    constructor(transactionRepo, userRepository, productRepository, configService, classMapper) {
         this.transactionRepo = transactionRepo;
         this.userRepository = userRepository;
+        this.productRepository = productRepository;
         this.configService = configService;
         this.classMapper = classMapper;
     }
     async getTransaction(id) {
         return this.classMapper.map(await this.transactionRepo.findOne(id), transactions_entity_1.Transactions, transactions_dto_1.TransactionsDto);
     }
-    async createTransaction(transaction) {
+    async createTransaction(transaction, createdById) {
+        var _a, _b, _c;
+        const quantity = Number(transaction.quantity);
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            throw new common_1.BadRequestException('Quantity must be greater than zero');
+        }
+        if (!((_a = transaction.product) === null || _a === void 0 ? void 0 : _a.id)) {
+            throw new common_1.BadRequestException('A product is required');
+        }
+        const product = await this.productRepository.findOne(transaction.product.id, {
+            relations: ['parent'],
+        });
+        if (!product || product.status !== product_entity_1.ProductStatus.ACTIVE) {
+            throw new common_1.BadRequestException('The selected product is unavailable');
+        }
+        if (((_b = transaction.category) === null || _b === void 0 ? void 0 : _b.id) && ((_c = product.parent) === null || _c === void 0 ? void 0 : _c.id) !== transaction.category.id) {
+            throw new common_1.BadRequestException('The selected category does not match the product');
+        }
+        const fees = [transaction.fee1, transaction.fee2, transaction.fee3].map((fee) => Number(fee || 0));
+        if (fees.some((fee) => !Number.isFinite(fee) || fee < 0)) {
+            throw new common_1.BadRequestException('Transaction fees cannot be negative');
+        }
         let newTransaction = await this.classMapper.map(transaction, transactions_dto_1.TransactionsDto, transactions_entity_1.Transactions);
         newTransaction.id = (0, uuid_1.v4)();
+        newTransaction.quantity = quantity;
+        newTransaction.amount = Number(product.price);
+        newTransaction.fee1 = fees[0];
+        newTransaction.fee2 = fees[1];
+        newTransaction.fee3 = fees[2];
+        newTransaction.status = transactions_entity_1.Status.PENDING;
+        newTransaction.createdBy = { id: createdById };
+        newTransaction.category = product.parent || null;
+        newTransaction.rewardPoints =
+            transaction.paymentMethod === transactions_entity_1.PaymentMethod.REWARD_POINTS
+                ? 0
+                : Math.floor(newTransaction.amount * quantity * Number(product.rewardRatio || 0));
         await this.transactionRepo.save(newTransaction);
+        return { id: newTransaction.id };
     }
     async modifyTransaction(id, transaction) {
         let existingTransaction = await this.transactionRepo.findOne(id);
@@ -55,7 +91,10 @@ let TransactionsService = class TransactionsService {
       user.reward_points as urp
       from transactions inner join user
       on user.id = transactions.customer_id
-      where transactions.id = "${id}"`))[0];
+      where transactions.id = ?`, [id]))[0];
+        if (!rewards) {
+            throw Error('Cannot find transaction rewards');
+        }
         let amt = rewards.amt;
         let qtt = rewards.qtt;
         let f1 = rewards.f1;
@@ -85,24 +124,34 @@ let TransactionsService = class TransactionsService {
         if (meta.rowsPerPage < 0 || meta.page < 0) {
             throw Error('Invalid pagination meta');
         }
-        let where = '';
+        const where = [];
+        const parameters = {};
         if (filter.from) {
-            where = `transactions.createdAt >= '${filter.from}'`;
+            where.push('transactions.createdAt >= :from');
+            parameters.from = filter.from;
         }
         if (filter.to) {
-            where += `${!!where ? ' and' : ''} transactions.createdAt <= '${filter.to}'`;
+            where.push('transactions.createdAt <= :to');
+            parameters.to = filter.to;
         }
         if (filter.type) {
-            where += `${!!where ? ' and' : ''} transactions.category = '${filter.type}'`;
+            where.push('transactions.product_category = :type');
+            parameters.type = filter.type;
         }
         if (filter.customer) {
-            where += `${!!where ? ' and' : ''} (transactions.customerName like '%${filter.customer}%')`;
+            where.push("concat(customer.fname, ' ', customer.lname) like :customer");
+            parameters.customer = `%${filter.customer}%`;
         }
         if (filter.id) {
-            where += `${!!where ? ' and' : ''} transactions.id = '${filter.id}'`;
+            where.push('transactions.id = :id');
+            parameters.id = filter.id;
         }
         if (filter.state) {
-            where += `${!!where ? ' and' : ''} transactions.status = '${filter.state}'`;
+            if (!Object.values(transactions_entity_1.Status).includes(filter.state)) {
+                throw Error('Invalid transaction status');
+            }
+            where.push('transactions.status = :state');
+            parameters.state = filter.state;
         }
         const [transactions, count] = await this.transactionRepo
             .createQueryBuilder('transactions')
@@ -143,7 +192,7 @@ let TransactionsService = class TransactionsService {
             'transactions.canceledAt',
             'transactions.refundedAt',
         ])
-            .where(where)
+            .where(where.join(' and ') || '1 = 1', parameters)
             .orderBy('transactions.createdAt', 'DESC')
             .getManyAndCount();
         return {
@@ -181,8 +230,10 @@ TransactionsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(transactions_entity_1.Transactions)),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __param(3, (0, nestjs_1.InjectMapper)()),
+    __param(2, (0, typeorm_1.InjectRepository)(product_entity_1.Product)),
+    __param(4, (0, nestjs_1.InjectMapper)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         config_1.ConfigService, Object])
 ], TransactionsService);

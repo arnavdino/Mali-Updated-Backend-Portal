@@ -9,10 +9,12 @@ import { TransactionsController } from './transactions.controller';
 import { TransactionsProfile } from './transactions.mapper';
 import { CaslAbilityFactory } from 'src/casl/casl-ability.factory';
 import { CaslModule } from 'src/casl/casl.module';
+import { Product } from 'src/product/entities/product.entity';
+import { User } from 'src/users/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Transactions]),
+    TypeOrmModule.forFeature([Transactions, User, Product]),
     HelpersModule,
     EventsModule,
     CaslModule,

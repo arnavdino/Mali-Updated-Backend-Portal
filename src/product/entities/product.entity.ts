@@ -99,7 +99,7 @@ export class Product {
   numLeft: number;
 
   @AutoMap()
-  @Column({ name: 'image_url' })
+  @Column({ name: 'image_url', default: '/lime.svg' })
   imageUrl: string;
 
   @AutoMap()

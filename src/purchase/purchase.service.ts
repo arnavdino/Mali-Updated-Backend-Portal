@@ -104,28 +104,36 @@ export class PurchaseService {
       throw Error('Invalid pagination meta');
     }
 
-    let where = '';
+    const where: string[] = [];
+    const parameters: Record<string, string | number> = {};
     if (filter.from) {
-      where = `purchase.createdAt > '${filter.from}'`;
+      where.push('purchase.createdAt > :from');
+      parameters.from = filter.from;
     }
     if (filter.to) {
-      where += `${!!where ? ' and' : ''} purchase.createdAt <  '${filter.to}'`;
+      where.push('purchase.createdAt < :to');
+      parameters.to = filter.to;
     }
     if (filter.type) {
-      where += `${!!where ? ' and' : ''} product.parent = '${filter.type}'`;
+      where.push('product.parent_id = :type');
+      parameters.type = filter.type;
     }
     if (filter.customer) {
-      where += `${!!where ? ' and' : ''} (user.fname like '%${
-        filter.customer
-      }%' or user.lname like '%${filter.customer}%')`;
+      where.push('(user.fname like :customer or user.lname like :customer)');
+      parameters.customer = `%${filter.customer}%`;
     }
     if (filter.id) {
-      where += `${!!where ? ' and' : ''} purchaseProduct.id = ${filter.id}`;
+      const id = Number(filter.id);
+      if (!Number.isInteger(id)) throw new BadRequestException('Invalid purchase id');
+      where.push('purchaseProduct.id = :id');
+      parameters.id = id;
     }
     if (filter.state) {
-      where += `${!!where ? ' and' : ''} purchaseProduct.state = '${
-        filter.state
-      }'`;
+      if (!Object.values(PurchaseState).includes(filter.state as PurchaseState)) {
+        throw new BadRequestException('Invalid purchase status');
+      }
+      where.push('purchaseProduct.state = :state');
+      parameters.state = filter.state;
     }
 
     const [transactions, count] = await this.transactionRepo
@@ -149,7 +157,7 @@ export class PurchaseService {
         'purchaseProduct.notes',
         'product.name',
       ])
-      .where(where)
+      .where(where.join(' and ') || '1 = 1', parameters)
       .getManyAndCount();
     return {
       transactions: transactions.map((t) => ({

@@ -18,6 +18,8 @@ import * as StreamArray from 'stream-json/streamers/StreamArray';
 import { LocationEntity } from './location.entity';
 import * as moment from 'moment-timezone';
 
+const DEFAULT_CREATED_USER_PASSWORD = 'Farmer2026!';
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -72,7 +74,8 @@ export class UsersService {
     entity.createdBy = { id: creatorId } as User;
     const salt = await bcrypt.genSalt();
 
-    entity.password = await bcrypt.hash(uuidv4(), salt);
+    // Admin-created users and customers begin with the agreed temporary password.
+    entity.password = await bcrypt.hash(DEFAULT_CREATED_USER_PASSWORD, salt);
 
     entity = await this.userRepository.save(entity);
   }
@@ -136,8 +139,12 @@ export class UsersService {
 
     if (filter) {
       if (filter.includes('_@@')) {
+        const requestedStatus = filter.replace('_@@', '');
+        if (![userStatus.ACTIVE, userStatus.INACTIVE, 'pending'].includes(requestedStatus as userStatus | 'pending')) {
+          throw new BadRequestException('invalid filter');
+        }
         qb.andWhere('user.verified = :verified', {
-          verified: filter.replace('_@@', '') == userStatus.ACTIVE,
+          verified: requestedStatus === userStatus.ACTIVE,
         });
       } else {
         qb.andWhere(
@@ -215,6 +222,34 @@ export class UsersService {
     await this.userRepository.save(user);
   }
 
+  async changePassword(
+    email: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+    if (
+      !(
+        newPassword?.length > 7 &&
+        hasSpecial(newPassword) &&
+        hasUpper(newPassword) &&
+        hasLower(newPassword) &&
+        hasNumber(newPassword)
+      )
+    ) {
+      throw new BadRequestException(
+        'Password must contain at least 8 characters, an uppercase letter, a lowercase letter, a number, and a special character',
+      );
+    }
+
+    const salt = await bcrypt.genSalt();
+    user.password = await bcrypt.hash(newPassword, salt);
+    await this.userRepository.save(user);
+  }
+
   async addImage(id: string, name: string) {
     await this.userRepository.update(id, {
       imageUrl: name,
@@ -268,10 +303,16 @@ export class UsersService {
   }
 
   async changeUsersState({ ids, status }: { ids: string[]; status: string }) {
-    await this.userRepository.query(
-      `update user set verified = ${
-        status == 'active' ? true : false
-      } where id in (${ids.map((id) => `'${id}'`).join(',')})`,
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new BadRequestException('At least one user id is required');
+    }
+    if (![userStatus.ACTIVE, userStatus.INACTIVE].includes(status as userStatus)) {
+      throw new BadRequestException('Invalid user status');
+    }
+
+    await this.userRepository.update(
+      { id: In(ids) },
+      { verified: status === userStatus.ACTIVE },
     );
 
     //add event here
@@ -320,12 +361,10 @@ export class UsersService {
   async search(search: string) {
     let results = await this.userRepository
       .createQueryBuilder('user')
-      .where(
-        'user.deleted_at is null and user.fname like :search or user.lname like :search',
-        {
-          search: `%${search}%`,
-        },
-      )
+      .where('user.deleted_at is null')
+      .andWhere('(user.fname like :search or user.lname like :search)', {
+        search: `%${search}%`,
+      })
       .take(50)
       .orderBy('user.createdAt', 'DESC')
       .select(['user.id', 'user.fname', 'user.lname', 'user.rewardPoints'])

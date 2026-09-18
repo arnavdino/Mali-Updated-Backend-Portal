@@ -25,7 +25,7 @@ let ProductProfile = class ProductProfile extends nestjs_1.AutomapperProfile {
     get profile() {
         return (mapper) => {
             (0, core_1.createMap)(mapper, create_product_dto_1.CreateProductDto, product_entity_1.Product, (0, core_1.forMember)((dest) => dest.imageUrl, (0, core_1.mapFrom)((src) => {
-                return src.imageUrl || '';
+                return src.imageUrl || '/lime.svg';
             })), (0, core_1.forMember)((dest) => dest.numAvail, (0, core_1.mapFrom)((src) => {
                 return Number.isInteger(src.numAvail) ? src.numAvail : -1;
             })), (0, core_1.forMember)((dest) => dest.sections, (0, core_1.mapFrom)((src) => {

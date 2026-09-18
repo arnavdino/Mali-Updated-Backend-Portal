@@ -79,6 +79,7 @@ export declare class UsersService {
     verifyUser(email: string): Promise<User>;
     verifyAdminUser(id: string, userEdited: User): Promise<User>;
     resetPassword(email: string, password: string): Promise<void>;
+    changePassword(email: string, currentPassword: string, newPassword: string): Promise<void>;
     addImage(id: string, name: string): Promise<void>;
     deleteCard(existingUser: any, cardId: string): Promise<UserDTO>;
     updateInfo(email: string, payload: EditUserDTO): Promise<UserDTO>;

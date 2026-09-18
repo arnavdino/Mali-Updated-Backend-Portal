@@ -28,7 +28,7 @@ let TransactionsController = TransactionsController_1 = class TransactionsContro
         this.logger = new common_1.Logger(TransactionsController_1.name);
     }
     async createTransaction(transaction, req, res) {
-        return this.appService.formatResponse(this.logger, this.transactionService.createTransaction(transaction), res, `create transaction for user ${req.user.id} and of id ${req.params.id}`);
+        return this.appService.formatResponse(this.logger, this.transactionService.createTransaction(transaction, req.user.id), res, `create transaction for user ${req.user.id} and of id ${req.params.id}`);
     }
     async editTransaction(transaction, req, res) {
         return this.appService.formatResponse(this.logger, this.transactionService.modifyTransaction(req.params.id, transaction), res, `update transaction for user ${req.user.id} and of id ${req.params.id}`);

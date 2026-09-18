@@ -11,6 +11,10 @@ export declare class UserController {
     getUser(req: any, res: any): Promise<import("../app-type").AppResponse>;
     uploadItem(req: any, res: any, file: any): Promise<any>;
     updateInfo(req: any, res: any, payload: EditUserDTO): Promise<import("../app-type").AppResponse>;
+    changePassword(req: any, res: any, payload: {
+        currentPassword: string;
+        newPassword: string;
+    }): Promise<import("../app-type").AppResponse>;
     deleteUser(req: any, res: any): Promise<import("../app-type").AppResponse>;
     deleteCard(req: any, res: any): Promise<import("../app-type").AppResponse>;
 }

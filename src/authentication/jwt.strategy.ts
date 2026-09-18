@@ -9,7 +9,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: true,
+      // Expired access tokens must never remain valid after their JWT lifetime.
+      ignoreExpiration: false,
       secretOrKey: requireJwtSecret(configService),
     });
   }

@@ -7,6 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Otp } from './otp.entity';
 import { Repository } from 'typeorm';
 import { permissions } from '../permissions/permissions';
+import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -46,10 +48,12 @@ export class AuthService {
   }
 
   async verifyCode(email: string, code: string) {
-    let otp = await this.otpRepository.findOne({
-      where: { email, code },
-    });
-    if (!otp || +otp.created + 300000 < new Date().valueOf()) {
+    const otp = await this.otpRepository.findOne({ where: { email } });
+    if (
+      !otp ||
+      +otp.created + 300000 < new Date().valueOf() ||
+      !(await bcrypt.compare(code, otp.code))
+    ) {
       throw Error('Invalid validation code!');
     }
     return otp;
@@ -64,9 +68,10 @@ export class AuthService {
       otp = new Otp();
     }
     otp.created = new Date().valueOf();
-    otp.code = `${Math.floor(Math.random() * 900000) + 100000}`;
+    // OTPs are unpredictable and only their bcrypt hash is persisted.
+    otp.code = await bcrypt.hash(`${randomInt(100000, 1000000)}`, 10);
     otp.email = email;
-    this.otpRepository.save(otp);
+    await this.otpRepository.save(otp);
   }
 
   async createCodeForReset(email: string) {

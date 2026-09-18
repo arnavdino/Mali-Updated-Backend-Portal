@@ -41,9 +41,10 @@ let ManagerService = class ManagerService {
         return this.classMapper.map(warehouseManager, warehouse_manger_entity_1.WarehouseManager, warehouse_manger_dto_1.WarehouseManagerDTO);
     }
     async changeStates({ ids, status }) {
-        await this.warehouseManagerRepository.query(`update warehouse_manager set status = '${status}' where id in (${ids
-            .map((id) => `'${id}'`)
-            .join(',')})`);
+        if (!Array.isArray(ids) || ids.length === 0 || !['active', 'inactive'].includes(status)) {
+            throw new common_1.BadRequestException('Invalid manager status update');
+        }
+        await this.warehouseManagerRepository.update({ id: (0, typeorm_2.In)(ids) }, { status });
         return 'ok';
     }
     async update(id, warehouseManagerDTO) {
@@ -69,7 +70,7 @@ let ManagerService = class ManagerService {
         if (filter === null || filter === void 0 ? void 0 : filter.includes('"')) {
             throw new common_1.BadRequestException('invalid filter');
         }
-        const [results, count] = await this.warehouseManagerRepository
+        const query = this.warehouseManagerRepository
             .createQueryBuilder('warehouseManager')
             .innerJoin('warehouseManager.warehouse', 'warehouse')
             .skip(meta.rowsPerPage * (meta.page - 1))
@@ -84,12 +85,18 @@ let ManagerService = class ManagerService {
             'warehouse.name',
             'warehouse.id',
         ])
-            .where(`warehouseManager.deletedAt is null ${filter
-            ? filter.includes('_@@')
-                ? ` and warehouseManager.status = '${filter.replace('_@@', '')}'`
-                : ` and warehouseManager.name like "%${filter}%"`
-            : ''} `)
-            .getManyAndCount();
+            .where('warehouseManager.deletedAt is null');
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('_@@')) {
+            const requestedStatus = filter.replace('_@@', '');
+            const status = requestedStatus === 'pending' ? 'inactive' : requestedStatus;
+            if (!['active', 'inactive'].includes(status))
+                throw new common_1.BadRequestException('invalid filter');
+            query.andWhere('warehouseManager.status = :status', { status });
+        }
+        else if (filter) {
+            query.andWhere('(warehouseManager.fname like :filter or warehouseManager.lname like :filter)', { filter: `%${filter}%` });
+        }
+        const [results, count] = await query.getManyAndCount();
         let managers = results.map((p) => this.classMapper.map(p, warehouse_manger_entity_1.WarehouseManager, warehouse_manger_dto_1.WarehouseManagerDTO));
         return { managers, count };
     }

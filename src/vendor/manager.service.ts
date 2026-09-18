@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MetaParam } from 'src/common/file/interfaces';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectMapper } from '@automapper/nestjs';
 import { Mapper } from '@automapper/core';
 import { v4 as uuidv4 } from 'uuid';
@@ -45,11 +45,10 @@ export class ManagerService {
   }
 
   async changeStates({ ids, status }: { ids: string[]; status: string }) {
-    await this.warehouseManagerRepository.query(
-      `update warehouse_manager set status = '${status}' where id in (${ids
-        .map((id) => `'${id}'`)
-        .join(',')})`,
-    );
+    if (!Array.isArray(ids) || ids.length === 0 || !['active', 'inactive'].includes(status)) {
+      throw new BadRequestException('Invalid manager status update');
+    }
+    await this.warehouseManagerRepository.update({ id: In(ids) }, { status });
     //add event here
     return 'ok';
   }
@@ -86,7 +85,7 @@ export class ManagerService {
       throw new BadRequestException('invalid filter');
     }
 
-    const [results, count] = await this.warehouseManagerRepository
+    const query = this.warehouseManagerRepository
       .createQueryBuilder('warehouseManager')
       .innerJoin('warehouseManager.warehouse', 'warehouse')
       .skip(meta.rowsPerPage * (meta.page - 1))
@@ -101,16 +100,18 @@ export class ManagerService {
         'warehouse.name',
         'warehouse.id',
       ])
-      .where(
-        `warehouseManager.deletedAt is null ${
-          filter
-            ? filter.includes('_@@')
-              ? ` and warehouseManager.status = '${filter.replace('_@@', '')}'`
-              : ` and warehouseManager.name like "%${filter}%"`
-            : ''
-        } `,
-      )
-      .getManyAndCount();
+      .where('warehouseManager.deletedAt is null');
+
+    if (filter?.includes('_@@')) {
+      const requestedStatus = filter.replace('_@@', '');
+      const status = requestedStatus === 'pending' ? 'inactive' : requestedStatus;
+      if (!['active', 'inactive'].includes(status)) throw new BadRequestException('invalid filter');
+      query.andWhere('warehouseManager.status = :status', { status });
+    } else if (filter) {
+      query.andWhere('(warehouseManager.fname like :filter or warehouseManager.lname like :filter)', { filter: `%${filter}%` });
+    }
+
+    const [results, count] = await query.getManyAndCount();
     let managers = results.map((p) =>
       this.classMapper.map(p, WarehouseManager, WarehouseManagerDTO),
     );

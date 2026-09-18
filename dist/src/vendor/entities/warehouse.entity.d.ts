@@ -1,4 +1,5 @@
 import { LocationEntity } from 'src/users/location.entity';
+import { ProductStatus } from 'src/product/entities/product.entity';
 export declare class Warehouse {
     id: number;
     name: string;
@@ -13,6 +14,7 @@ export declare class Warehouse {
     villagesSummary: number;
     membersSummary: number;
     deletedAt: Date;
+    status: ProductStatus;
     potentialAreaSummary: number;
     cultivatedAreaSummary: number;
     forecastCampaignAreasSummary: number;

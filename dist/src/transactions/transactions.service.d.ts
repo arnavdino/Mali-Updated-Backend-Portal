@@ -5,14 +5,18 @@ import { Mapper } from '@automapper/core';
 import { ConfigService } from '@nestjs/config';
 import { MetaParam, TransactionFilter } from 'src/common/file/interfaces';
 import { User } from '../users/user.entity';
+import { Product } from '../product/entities/product.entity';
 export declare class TransactionsService {
     private transactionRepo;
     private userRepository;
+    private productRepository;
     private configService;
     private readonly classMapper;
-    constructor(transactionRepo: Repository<Transactions>, userRepository: Repository<User>, configService: ConfigService, classMapper: Mapper);
+    constructor(transactionRepo: Repository<Transactions>, userRepository: Repository<User>, productRepository: Repository<Product>, configService: ConfigService, classMapper: Mapper);
     getTransaction(id: string): Promise<TransactionsDto>;
-    createTransaction(transaction: TransactionsDto): Promise<void>;
+    createTransaction(transaction: TransactionsDto, createdById: string): Promise<{
+        id: string;
+    }>;
     modifyTransaction(id: string, transaction: TransactionsDto): Promise<void>;
     findAllForAdmin(filter: TransactionFilter, meta: MetaParam): Promise<{
         transactions: {

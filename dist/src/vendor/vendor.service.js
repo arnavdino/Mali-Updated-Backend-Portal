@@ -39,9 +39,10 @@ let VendorService = class VendorService {
         return this.classMapper.map(vendor, vendor_entity_1.Vendor, vendor_dto_1.VendorDTO);
     }
     async changeVendorsState({ ids, status }) {
-        await this.vendorRepository.query(`update vendor set status = '${status}' where id in (${ids
-            .map((id) => `'${id}'`)
-            .join(',')})`);
+        if (!Array.isArray(ids) || ids.length === 0 || !['active', 'inactive'].includes(status)) {
+            throw new common_1.BadRequestException('Invalid vendor status update');
+        }
+        await this.vendorRepository.update({ id: (0, typeorm_2.In)(ids) }, { status: status });
         return 'ok';
     }
     async update(id, vendorDTO) {
@@ -64,7 +65,7 @@ let VendorService = class VendorService {
         if (filter === null || filter === void 0 ? void 0 : filter.includes('"')) {
             throw new common_1.BadRequestException('invalid filter');
         }
-        const [results, count] = await this.vendorRepository
+        const query = this.vendorRepository
             .createQueryBuilder('vendor')
             .skip(meta.rowsPerPage * (meta.page - 1))
             .take(meta.rowsPerPage)
@@ -76,12 +77,21 @@ let VendorService = class VendorService {
             'vendor.managerName',
             'vendor.deletedAt',
         ])
-            .where(`vendor.deletedAt is null ${filter
-            ? filter.includes('_@@')
-                ? ` and vendor.status = '${filter.replace('_@@', '')}'`
-                : ` and vendor.name like "%${filter}%"`
-            : ''} `)
-            .getManyAndCount();
+            .where('vendor.deletedAt is null');
+        if (filter) {
+            if (filter.includes('_@@')) {
+                const requestedStatus = filter.replace('_@@', '');
+                const status = requestedStatus === 'pending' ? 'inactive' : requestedStatus;
+                if (!['active', 'inactive'].includes(status)) {
+                    throw new common_1.BadRequestException('invalid filter');
+                }
+                query.andWhere('vendor.status = :status', { status });
+            }
+            else {
+                query.andWhere('vendor.name like :filter', { filter: `%${filter}%` });
+            }
+        }
+        const [results, count] = await query.getManyAndCount();
         let vendors = results.map((p) => this.classMapper.map(p, vendor_entity_1.Vendor, vendor_dto_1.VendorDTO));
         return { vendors, count };
     }

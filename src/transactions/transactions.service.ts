@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
 import { MetaParam, TransactionFilter } from 'src/common/file/interfaces';
 import { User } from '../users/user.entity';
+import { Product, ProductStatus } from '../product/entities/product.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -17,6 +18,8 @@ export class TransactionsService {
     private transactionRepo: Repository<Transactions>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
     private configService: ConfigService,
     @InjectMapper() private readonly classMapper: Mapper,
   ) {}
@@ -29,14 +32,52 @@ export class TransactionsService {
     );
   }
 
-  async createTransaction(transaction: TransactionsDto) {
+  async createTransaction(transaction: TransactionsDto, createdById: string) {
+    const quantity = Number(transaction.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      throw new BadRequestException('Quantity must be greater than zero');
+    }
+    if (!transaction.product?.id) {
+      throw new BadRequestException('A product is required');
+    }
+
+    const product = await this.productRepository.findOne(transaction.product.id, {
+      relations: ['parent'],
+    });
+    if (!product || product.status !== ProductStatus.ACTIVE) {
+      throw new BadRequestException('The selected product is unavailable');
+    }
+    if (transaction.category?.id && product.parent?.id !== transaction.category.id) {
+      throw new BadRequestException('The selected category does not match the product');
+    }
+
+    const fees = [transaction.fee1, transaction.fee2, transaction.fee3].map(
+      (fee) => Number(fee || 0),
+    );
+    if (fees.some((fee) => !Number.isFinite(fee) || fee < 0)) {
+      throw new BadRequestException('Transaction fees cannot be negative');
+    }
+
     let newTransaction: Transactions = await this.classMapper.map(
       transaction,
       TransactionsDto,
       Transactions,
     );
     newTransaction.id = uuidv4();
+    newTransaction.quantity = quantity;
+    newTransaction.amount = Number(product.price);
+    newTransaction.fee1 = fees[0];
+    newTransaction.fee2 = fees[1];
+    newTransaction.fee3 = fees[2];
+    newTransaction.status = Status.PENDING;
+    newTransaction.createdBy = { id: createdById } as User;
+    newTransaction.category = product.parent || null;
+    newTransaction.rewardPoints =
+      transaction.paymentMethod === PaymentMethod.REWARD_POINTS
+        ? 0
+        : Math.floor(newTransaction.amount * quantity * Number(product.rewardRatio || 0));
     await this.transactionRepo.save(newTransaction);
+    return { id: newTransaction.id };
   }
 
   async modifyTransaction(id: string, transaction: TransactionsDto) {
@@ -63,8 +104,12 @@ export class TransactionsService {
       user.reward_points as urp
       from transactions inner join user
       on user.id = transactions.customer_id
-      where transactions.id = "${id}"`,
+      where transactions.id = ?`,
+      [id],
     ))[0];
+    if (!rewards) {
+      throw Error('Cannot find transaction rewards');
+    }
     let amt = rewards.amt;
     let qtt = rewards.qtt;
     let f1 = rewards.f1;
@@ -99,32 +144,34 @@ export class TransactionsService {
       throw Error('Invalid pagination meta');
     }
 
-    let where = '';
+    const where: string[] = [];
+    const parameters: Record<string, string> = {};
     if (filter.from) {
-      where = `transactions.createdAt >= '${filter.from}'`;
+      where.push('transactions.createdAt >= :from');
+      parameters.from = filter.from;
     }
     if (filter.to) {
-      where += `${!!where ? ' and' : ''} transactions.createdAt <= '${
-        filter.to
-      }'`;
+      where.push('transactions.createdAt <= :to');
+      parameters.to = filter.to;
     }
     if (filter.type) {
-      where += `${!!where ? ' and' : ''} transactions.category = '${
-        filter.type
-      }'`;
+      where.push('transactions.product_category = :type');
+      parameters.type = filter.type;
     }
     if (filter.customer) {
-      where += `${!!where ? ' and' : ''} (transactions.customerName like '%${
-        filter.customer
-      }%')`;
+      where.push("concat(customer.fname, ' ', customer.lname) like :customer");
+      parameters.customer = `%${filter.customer}%`;
     }
     if (filter.id) {
-      where += `${!!where ? ' and' : ''} transactions.id = '${filter.id}'`;
+      where.push('transactions.id = :id');
+      parameters.id = filter.id;
     }
     if (filter.state) {
-      where += `${!!where ? ' and' : ''} transactions.status = '${
-        filter.state
-      }'`;
+      if (!Object.values(Status).includes(filter.state as Status)) {
+        throw Error('Invalid transaction status');
+      }
+      where.push('transactions.status = :state');
+      parameters.state = filter.state;
     }
 
     const [transactions, count] = await this.transactionRepo
@@ -166,7 +213,7 @@ export class TransactionsService {
         'transactions.canceledAt',
         'transactions.refundedAt',
       ])
-      .where(where)
+      .where(where.join(' and ') || '1 = 1', parameters)
       .orderBy('transactions.createdAt', 'DESC')
       .getManyAndCount();
     return {

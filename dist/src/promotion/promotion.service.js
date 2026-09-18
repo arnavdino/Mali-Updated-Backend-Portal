@@ -41,7 +41,7 @@ let PromotionService = class PromotionService {
         return { id: promotion.id };
     }
     async getProductForPromotions(filter) {
-        return await this.promotionRepo.query(`select id,name from product where name like '%${filter}%' and parent_id is not null limit 20 `);
+        return await this.promotionRepo.query('select id, name from product where name like ? and parent_id is not null limit 20', [`%${filter || ''}%`]);
     }
     async addImageToPromotion(id, userId, url) {
         let promotion = await this.promotionRepo.findOne({
@@ -63,7 +63,7 @@ let PromotionService = class PromotionService {
         if (filter === null || filter === void 0 ? void 0 : filter.includes('"')) {
             throw new common_1.BadRequestException('invalid filter');
         }
-        const [results, count] = await this.promotionRepo
+        const query = this.promotionRepo
             .createQueryBuilder('promotion')
             .innerJoin('promotion.product', 'product')
             .skip(meta.rowsPerPage * (meta.page - 1))
@@ -78,12 +78,18 @@ let PromotionService = class PromotionService {
             'product.id',
             'product.name',
         ])
-            .where(`${filter
-            ? filter.includes('_@@')
-                ? ` promotion.status = '${filter.replace('_@@', '')}'`
-                : ` promotion.name like "%${filter}%" `
-            : ''} `)
-            .getManyAndCount();
+            .where('1 = 1');
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('_@@')) {
+            const status = filter.replace('_@@', '');
+            if (!Object.values(product_entity_1.ProductStatus).includes(status)) {
+                throw new common_1.BadRequestException('invalid filter');
+            }
+            query.andWhere('promotion.status = :status', { status });
+        }
+        else if (filter) {
+            query.andWhere('promotion.name like :filter', { filter: `%${filter}%` });
+        }
+        const [results, count] = await query.getManyAndCount();
         let promotions = results.map((p) => {
             return Object.assign(Object.assign({}, this.classMapper.map(p, promotion_entity_1.Promotion, create_promotion_dto_1.CreatePromotionDto)), { product: { id: p.product.id, name: p.product.name } });
         });

@@ -65,6 +65,25 @@ export class UserController {
     );
   }
 
+  @Put('password')
+  async changePassword(
+    @Request() req,
+    @Response() res,
+    @Body()
+    payload: { currentPassword: string; newPassword: string },
+  ) {
+    return this.appService.formatResponse(
+      this.logger,
+      this.userService.changePassword(
+        req.user.username,
+        payload.currentPassword,
+        payload.newPassword,
+      ),
+      res,
+      `changing password for user ${req.user.id}`,
+    );
+  }
+
   @Delete('delete')
   async deleteUser(@Request() req, @Response() res) {
     return this.appService.formatResponse(

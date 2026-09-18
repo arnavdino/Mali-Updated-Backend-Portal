@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Warehouse = void 0;
 const classes_1 = require("@automapper/classes");
 const location_entity_1 = require("../../users/location.entity");
+const product_entity_1 = require("../../product/entities/product.entity");
 const typeorm_1 = require("typeorm");
 let Warehouse = class Warehouse {
 };
@@ -79,6 +80,11 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'deleted_at', nullable: true }),
     __metadata("design:type", Date)
 ], Warehouse.prototype, "deletedAt", void 0);
+__decorate([
+    (0, classes_1.AutoMap)(),
+    (0, typeorm_1.Column)({ name: 'status', default: 'inactive' }),
+    __metadata("design:type", String)
+], Warehouse.prototype, "status", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
     (0, typeorm_1.Column)({ name: 'potentail_area_summary' }),

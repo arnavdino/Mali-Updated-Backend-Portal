@@ -65,7 +65,9 @@ export class ProductService {
       .where(`product.level = 'product'`)
       .andWhere(`parent.status = 'active'`)
       .andWhere(`product.status = 'active'`)
-      .andWhere(`product.parent = '${category}'`)
+      .andWhere(category === '*' ? '1 = 1' : 'product.parent_id = :category', {
+        category,
+      })
       .andWhere(
         new Brackets((qb) => {
           qb.where('product.name like :search', {
@@ -286,22 +288,45 @@ export class ProductService {
   }
 
   async getCategories(filter: string, parentId?: string, includeSubs = false) {
+    const categoryQuery = this.productRepo
+      .createQueryBuilder('product')
+      .select([
+        'product.id AS id',
+        'product.name AS name',
+        'product.image_url AS imageUrl',
+        'product.status AS status',
+      ])
+      .where('product.level = :level', {
+        level: parentId ? Level.SUB_CATEGORY : Level.CATEGORY,
+      });
+
+    if (filter?.includes('_@@')) {
+      const status = filter.replace('_@@', '');
+      if (!Object.values(ProductStatus).includes(status as ProductStatus)) {
+        throw new BadRequestException('invalid filter');
+      }
+      categoryQuery.andWhere('product.status = :status', { status });
+    } else if (filter) {
+      categoryQuery.andWhere('product.name like :filter', { filter: `%${filter}%` });
+    }
+    if (parentId) {
+      categoryQuery.andWhere('product.parent_id = :parentId', { parentId });
+    }
+
     const [categories, subCategories] = await Promise.all([
-      this.productRepo.query(
-        ` Select product.id as id,product.name as name,product.image_url as imageUrl, product.status from product where product.level = "${
-          parentId ? 'sub_category' : 'category'
-        }"   ${
-          filter
-            ? filter.includes('_@@')
-              ? `and product.status = '${filter.replace('_@@', '')}'`
-              : `and product.name like '%${filter}%'`
-            : ''
-        } ${parentId ? ` and product.parent_id = '${parentId}'` : ''} `,
-      ),
+      categoryQuery.getRawMany(),
       includeSubs
-        ? this.productRepo.query(
-            ` Select product.id as id,product.name as name,product.image_url as imageUrl, product.status,product.parent_id from product where product.level ="sub_category"`,
-          )
+        ? this.productRepo
+            .createQueryBuilder('product')
+            .select([
+              'product.id AS id',
+              'product.name AS name',
+              'product.image_url AS imageUrl',
+              'product.status AS status',
+              'product.parent_id AS parent_id',
+            ])
+            .where('product.level = :level', { level: Level.SUB_CATEGORY })
+            .getRawMany()
         : undefined,
     ]);
     return categories.map((cat) => ({
@@ -317,13 +342,17 @@ export class ProductService {
       throw new BadRequestException('invalid filter');
     }
     let order: 'ASC' | 'DESC' = 'ASC';
-    let field = '';
+    let field = 'product.createdAt';
     if (meta.sortable) {
-      field = meta.sortable.field;
+      const sortableFields = ['name', 'price', 'status', 'createdAt'];
+      if (!sortableFields.includes(meta.sortable.field)) {
+        throw new BadRequestException('invalid sort field');
+      }
+      field = `product.${meta.sortable.field}`;
       order = meta.sortable.order;
     }
 
-    const [results, count] = await this.productRepo
+    const query = this.productRepo
       .createQueryBuilder('product')
       .innerJoin('product.parent', 'parent')
       .orderBy(field, order)
@@ -339,19 +368,25 @@ export class ProductService {
         'product.status',
         'product.description',
         'product.imageUrl',
+        'product.createdAt',
         'parent.name',
         'parent.id',
       ])
-      .where(
-        `product.level = "${Level.PRODUCT}" ${
-          filter.includes('_@@')
-            ? `and product.status = '${filter.replace('_@@', '')}'`
-            : filter
-            ? `and (parent.name like "%${filter}%" or product.name like "%${filter}%")`
-            : ''
-        } `,
-      )
-      .getManyAndCount();
+      .where('product.level = :level', { level: Level.PRODUCT });
+
+    if (filter?.includes('_@@')) {
+      const status = filter.replace('_@@', '');
+      if (!Object.values(ProductStatus).includes(status as ProductStatus)) {
+        throw new BadRequestException('invalid filter');
+      }
+      query.andWhere('product.status = :status', { status });
+    } else if (filter) {
+      query.andWhere('(parent.name like :filter or product.name like :filter)', {
+        filter: `%${filter}%`,
+      });
+    }
+
+    const [results, count] = await query.getManyAndCount();
     let products = results.map((p) => {
       return this.classMapper.map(p, Product, CreateProductDto);
     });
@@ -397,7 +432,8 @@ export class ProductService {
     if (
       (
         await this.productRepo.query(
-          `Select count(*)  as count from purchase_product where product_id = "${id}"`,
+          'Select count(*) as count from purchase_product where product_id = ?',
+          [id],
         )
       )[0].count > 0
     ) {

@@ -1,5 +1,6 @@
 import { AutoMap } from '@automapper/classes';
 import { LocationEntity } from 'src/users/location.entity';
+import { ProductStatus } from 'src/product/entities/product.entity';
 import {
   Column,
   CreateDateColumn,
@@ -60,6 +61,10 @@ export class Warehouse {
 
   @Column({ name: 'deleted_at', nullable: true })
   deletedAt: Date;
+
+  @AutoMap()
+  @Column({ name: 'status', default: 'inactive' })
+  status: ProductStatus;
 
   @AutoMap()
   @Column({ name: 'potentail_area_summary' })

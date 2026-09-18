@@ -101,6 +101,8 @@ __decorate([
 ], AdminPromotionController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.read, permissions_1.PermissionSubject.promotion)),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Response)()),
     __param(2, (0, common_1.Request)()),
@@ -110,6 +112,8 @@ __decorate([
 ], AdminPromotionController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Put)(':id'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.update, permissions_1.PermissionSubject.promotion)),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Response)()),
@@ -120,6 +124,8 @@ __decorate([
 ], AdminPromotionController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.delete, permissions_1.PermissionSubject.promotion)),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Response)()),
     __param(2, (0, common_1.Request)()),

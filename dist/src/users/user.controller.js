@@ -36,6 +36,9 @@ let UserController = UserController_1 = class UserController {
     async updateInfo(req, res, payload) {
         return this.appService.formatResponse(this.logger, this.userService.updateInfo(req.user.username, payload), res, `update user ${req.user.id} with fname ${payload.fname} and lname ${payload.lname}`);
     }
+    async changePassword(req, res, payload) {
+        return this.appService.formatResponse(this.logger, this.userService.changePassword(req.user.username, payload.currentPassword, payload.newPassword), res, `changing password for user ${req.user.id}`);
+    }
     async deleteUser(req, res) {
         return this.appService.formatResponse(this.logger, this.userService.deleteUser(req.user.username), res, `deleting user ${req.user.id} `);
     }
@@ -70,6 +73,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object, edit_user_dto_1.EditUserDTO]),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "updateInfo", null);
+__decorate([
+    (0, common_1.Put)('password'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Response)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "changePassword", null);
 __decorate([
     (0, common_1.Delete)('delete'),
     __param(0, (0, common_1.Request)()),

@@ -30,7 +30,7 @@ export class KitsService {
       description: dto.description || dto.scenario, longDescription: dto.description || null,
       status: dto.isActive === false ? ProductStatus.INACTIVE : ProductStatus.ACTIVE,
       type: 'product', productKind: ProductKind.KIT, tracksInventory: false,
-      unit: 'kit', numAvail: 0, numLeft: 0, imageUrl: '', level: Level.PRODUCT,
+      unit: 'kit', numAvail: 0, numLeft: 0, imageUrl: '/lime.svg', level: Level.PRODUCT,
       createdBy: { id: user.id } as User,
       ...(dto.categoryId ? { parent: { id: dto.categoryId } as Product } : {}),
     });

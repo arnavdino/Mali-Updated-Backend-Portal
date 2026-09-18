@@ -58,7 +58,9 @@ let ProductService = class ProductService {
             .where(`product.level = 'product'`)
             .andWhere(`parent.status = 'active'`)
             .andWhere(`product.status = 'active'`)
-            .andWhere(`product.parent = '${category}'`)
+            .andWhere(category === '*' ? '1 = 1' : 'product.parent_id = :category', {
+            category,
+        })
             .andWhere(new typeorm_1.Brackets((qb) => {
             qb.where('product.name like :search', {
                 search: `%${search}%`,
@@ -232,14 +234,44 @@ let ProductService = class ProductService {
         };
     }
     async getCategories(filter, parentId, includeSubs = false) {
+        const categoryQuery = this.productRepo
+            .createQueryBuilder('product')
+            .select([
+            'product.id AS id',
+            'product.name AS name',
+            'product.image_url AS imageUrl',
+            'product.status AS status',
+        ])
+            .where('product.level = :level', {
+            level: parentId ? product_entity_1.Level.SUB_CATEGORY : product_entity_1.Level.CATEGORY,
+        });
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('_@@')) {
+            const status = filter.replace('_@@', '');
+            if (!Object.values(product_entity_1.ProductStatus).includes(status)) {
+                throw new common_1.BadRequestException('invalid filter');
+            }
+            categoryQuery.andWhere('product.status = :status', { status });
+        }
+        else if (filter) {
+            categoryQuery.andWhere('product.name like :filter', { filter: `%${filter}%` });
+        }
+        if (parentId) {
+            categoryQuery.andWhere('product.parent_id = :parentId', { parentId });
+        }
         const [categories, subCategories] = await Promise.all([
-            this.productRepo.query(` Select product.id as id,product.name as name,product.image_url as imageUrl, product.status from product where product.level = "${parentId ? 'sub_category' : 'category'}"   ${filter
-                ? filter.includes('_@@')
-                    ? `and product.status = '${filter.replace('_@@', '')}'`
-                    : `and product.name like '%${filter}%'`
-                : ''} ${parentId ? ` and product.parent_id = '${parentId}'` : ''} `),
+            categoryQuery.getRawMany(),
             includeSubs
-                ? this.productRepo.query(` Select product.id as id,product.name as name,product.image_url as imageUrl, product.status,product.parent_id from product where product.level ="sub_category"`)
+                ? this.productRepo
+                    .createQueryBuilder('product')
+                    .select([
+                    'product.id AS id',
+                    'product.name AS name',
+                    'product.image_url AS imageUrl',
+                    'product.status AS status',
+                    'product.parent_id AS parent_id',
+                ])
+                    .where('product.level = :level', { level: product_entity_1.Level.SUB_CATEGORY })
+                    .getRawMany()
                 : undefined,
         ]);
         return categories.map((cat) => (Object.assign(Object.assign({}, cat), { subCategories: (subCategories === null || subCategories === void 0 ? void 0 : subCategories.filter((p) => p.parent_id == cat.id)) || [] })));
@@ -252,12 +284,16 @@ let ProductService = class ProductService {
             throw new common_1.BadRequestException('invalid filter');
         }
         let order = 'ASC';
-        let field = '';
+        let field = 'product.createdAt';
         if (meta.sortable) {
-            field = meta.sortable.field;
+            const sortableFields = ['name', 'price', 'status', 'createdAt'];
+            if (!sortableFields.includes(meta.sortable.field)) {
+                throw new common_1.BadRequestException('invalid sort field');
+            }
+            field = `product.${meta.sortable.field}`;
             order = meta.sortable.order;
         }
-        const [results, count] = await this.productRepo
+        const query = this.productRepo
             .createQueryBuilder('product')
             .innerJoin('product.parent', 'parent')
             .orderBy(field, order)
@@ -272,15 +308,24 @@ let ProductService = class ProductService {
             'product.status',
             'product.description',
             'product.imageUrl',
+            'product.createdAt',
             'parent.name',
             'parent.id',
         ])
-            .where(`product.level = "${product_entity_1.Level.PRODUCT}" ${filter.includes('_@@')
-            ? `and product.status = '${filter.replace('_@@', '')}'`
-            : filter
-                ? `and (parent.name like "%${filter}%" or product.name like "%${filter}%")`
-                : ''} `)
-            .getManyAndCount();
+            .where('product.level = :level', { level: product_entity_1.Level.PRODUCT });
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('_@@')) {
+            const status = filter.replace('_@@', '');
+            if (!Object.values(product_entity_1.ProductStatus).includes(status)) {
+                throw new common_1.BadRequestException('invalid filter');
+            }
+            query.andWhere('product.status = :status', { status });
+        }
+        else if (filter) {
+            query.andWhere('(parent.name like :filter or product.name like :filter)', {
+                filter: `%${filter}%`,
+            });
+        }
+        const [results, count] = await query.getManyAndCount();
         let products = results.map((p) => {
             return this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto);
         });
@@ -317,7 +362,7 @@ let ProductService = class ProductService {
         await this.productRepo.save(Object.assign(Object.assign({}, oldProduct), product));
     }
     async remove(id) {
-        if ((await this.productRepo.query(`Select count(*)  as count from purchase_product where product_id = "${id}"`))[0].count > 0) {
+        if ((await this.productRepo.query('Select count(*) as count from purchase_product where product_id = ?', [id]))[0].count > 0) {
             throw Error("cannot delete a product that's been purchased!");
         }
         await this.productRepo.delete(id);

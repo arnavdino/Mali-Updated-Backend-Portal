@@ -33,7 +33,6 @@ export declare class ProductService {
         createdAt: Date;
         level: string;
         status: ProductStatus;
-        createdBy: import("../users/user.dto").UserDTO;
         parent: CreateProductDto;
         imageUrl: string;
         longDescription: string;
@@ -62,7 +61,7 @@ export declare class ProductService {
         loadMore: boolean;
         skip: number;
     }>;
-    getCategories(filter: string, parentId?: string, includeSubs?: boolean): Promise<any>;
+    getCategories(filter: string, parentId?: string, includeSubs?: boolean): Promise<any[]>;
     findAll(filter: string, meta: MetaParam): Promise<{
         products: CreateProductDto[];
         count: number;

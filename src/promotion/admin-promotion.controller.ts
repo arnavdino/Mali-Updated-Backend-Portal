@@ -114,6 +114,10 @@ export class AdminPromotionController {
   }
 
   @Get(':id')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.read, PermissionSubject.promotion),
+  )
   findOne(@Param('id') id: string, @Response() res, @Request() req) {
     return this.helpersService.formatResponse(
       this.logger,
@@ -124,6 +128,10 @@ export class AdminPromotionController {
   }
 
   @Put(':id')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.update, PermissionSubject.promotion),
+  )
   update(
     @Param('id') id: string,
     @Body() updateProductDto: CreatePromotionDto,
@@ -139,6 +147,10 @@ export class AdminPromotionController {
   }
 
   @Delete(':id')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.delete, PermissionSubject.promotion),
+  )
   remove(@Param('id') id: string, @Response() res, @Request() req) {
     return this.helpersService.formatResponse(
       this.logger,

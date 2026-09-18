@@ -40,7 +40,7 @@ export class TransactionsController {
   ) {
     return this.appService.formatResponse(
       this.logger,
-      this.transactionService.createTransaction(transaction),
+      this.transactionService.createTransaction(transaction, req.user.id),
       res,
       `create transaction for user ${req.user.id} and of id ${req.params.id}`,
     );
