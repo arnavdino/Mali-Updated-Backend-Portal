@@ -134,35 +134,54 @@ export class ProductService {
 
   async getFeaturedProducts() {
     let product = await this.productRepo.query(
-      "select p.id as id, p.name as name, p.price as price, p.reward_ratio as rewardRatio, p.unit as unit, p.image_url as imageUrl, c.name as parent from product p inner join product c on c.id = p.parent_id where p.presentation = 'featured'",
+      "select p.id as id, p.name as name, p.price as price, p.reward_ratio as rewardRatio, p.unit as unit, p.image_url as imageUrl, c.name as parent from product p inner join product c on c.id = p.parent_id where p.presentation = 'featured' and p.status = 'active' and c.status = 'active' order by p.created_at desc limit 5",
     );
     return product;
   }
 
   async getActiveProducts() {
-    let month1 = moment(new Date()).format('MM');
-    let year1 = moment(new Date()).format('yyyy');
-    let prevMonth = moment(new Date()).subtract(1, 'month').format('MM');
-    let prevYeat = moment(new Date()).subtract(1, 'month').format('yyyy');
-    let data = await this.productRepo.query(
-      `select p.id, p.name, SUM(pr.amount * pr.quantity + pr.fee_1 + pr.fee_2 + pr.fee_3) as "cur" from transactions pr inner join product p on p.id = pr.product_id where pr.status = "${Status.COMPLETED}" and pr.completed_at >= '${year1}-${month1}-01' group by p.id order by SUM(pr.amount * pr.quantity + pr.fee_1 + pr.fee_2 + pr.fee_3) desc limit 5`,
-    );
-    for (const product of data) {
-      const entry = await this.productRepo.query(
-        `select SUM(pr.amount * pr.quantity + pr.fee_1 + pr.fee_2 + pr.fee_3) as quantity from transactions pr inner join product p on p.id = pr.product_id where pr.status = "${Status.COMPLETED}" and pr.completed_at >= '${prevYeat}-${prevMonth}-01' and pr.completed_at < '${year1}-${month1}-01' and p.id = '${product.id}'`,
-      );
+    const currentMonthStart = moment().startOf('month').format('YYYY-MM-DD');
+    const nextMonthStart = moment().add(1, 'month').startOf('month').format('YYYY-MM-DD');
+    const previousMonthStart = moment()
+      .subtract(1, 'month')
+      .startOf('month')
+      .format('YYYY-MM-DD');
 
-      product['prev'] = entry[0].quantity || 0;
-      delete product.id;
-    }
-    return data;
+    return this.productRepo.query(
+      `select p.name as name,
+        coalesce(sum(case when pr.completed_at >= ? and pr.completed_at < ? then pr.amount * pr.quantity + coalesce(pr.fee_1, 0) + coalesce(pr.fee_2, 0) + coalesce(pr.fee_3, 0) else 0 end), 0) as cur,
+        coalesce(sum(case when pr.completed_at >= ? and pr.completed_at < ? then pr.amount * pr.quantity + coalesce(pr.fee_1, 0) + coalesce(pr.fee_2, 0) + coalesce(pr.fee_3, 0) else 0 end), 0) as prev
+      from transactions pr
+      inner join product p on p.id = pr.product_id
+      where pr.status = ? and pr.completed_at >= ? and pr.completed_at < ?
+      group by p.id, p.name
+      order by cur desc, p.name asc
+      limit 5`,
+      [
+        currentMonthStart,
+        nextMonthStart,
+        previousMonthStart,
+        currentMonthStart,
+        Status.COMPLETED,
+        previousMonthStart,
+        nextMonthStart,
+      ],
+    );
   }
 
   async getRevenueSummary() {
-    let month1 = moment(new Date()).format('MM');
-    let year1 = moment(new Date()).format('yyyy');
+    const currentMonthStart = moment().startOf('month').format('YYYY-MM-DD');
+    const nextMonthStart = moment().add(1, 'month').startOf('month').format('YYYY-MM-DD');
     let data = await this.productRepo.query(
-      `select p.name as name, SUM(t.amount * t.quantity + t.fee_1 + t.fee_2 + t.fee_3) as value from transactions as t inner join product p on p.id = t.product_category where t.completed_at >= '${year1}-${month1}-01' AND t.status = "${Status.COMPLETED}" group by t.product_category limit 5`,
+      `select p.name as name,
+        coalesce(sum(t.amount * t.quantity + coalesce(t.fee_1, 0) + coalesce(t.fee_2, 0) + coalesce(t.fee_3, 0)), 0) as value
+      from transactions t
+      inner join product p on p.id = t.product_category
+      where t.completed_at >= ? and t.completed_at < ? and t.status = ?
+      group by t.product_category, p.name
+      order by value desc, p.name asc
+      limit 5`,
+      [currentMonthStart, nextMonthStart, Status.COMPLETED],
     );
 
     return data;
@@ -184,7 +203,7 @@ export class ProductService {
       'Dec',
     ];
     let month1 = moment(new Date()).subtract(11, 'month').format('MM');
-    let year1 = moment(new Date()).subtract(11, 'month').format('yyyy');
+    let year1 = moment(new Date()).subtract(11, 'month').format('YYYY');
     if (+moment(new Date()).format('MM') < 12) {
       months = months.concat(
         months.splice(0, +moment(new Date()).format('MM')),
@@ -192,25 +211,28 @@ export class ProductService {
     }
 
     let month2 = moment(new Date()).subtract(23, 'month').format('MM');
-    let year2 = moment(new Date()).subtract(23, 'month').format('yyyy');
+    let year2 = moment(new Date()).subtract(23, 'month').format('YYYY');
 
+    const currentPeriodStart = `${year1}-${month1}-01`;
+    const nextMonthStart = moment().add(1, 'month').startOf('month').format('YYYY-MM-DD');
+    const previousPeriodStart = `${year2}-${month2}-01`;
     let data = await this.productRepo.query(`
     SELECT 
       DATE_FORMAT(pu.completed_at, "%b") AS name, 
       SUM(pu.amount * pu.quantity + pu.fee_1 + pu.fee_2 + pu.fee_3) AS "cur"
       FROM transactions pu 
-      WHERE completed_at >= "${year1}-${month1}-01" AND status = "${Status.COMPLETED}"
+      WHERE completed_at >= ? AND completed_at < ? AND status = ?
       GROUP BY DATE_FORMAT(pu.completed_at, "%b")
-    `);
+    `, [currentPeriodStart, nextMonthStart, Status.COMPLETED]);
 
     let data2 = await this.productRepo.query(`
     SELECT 
       DATE_FORMAT(pu.completed_at, "%b") AS name, 
       SUM(pu.amount * pu.quantity + pu.fee_1 + pu.fee_2 + pu.fee_3) AS "prev"
       FROM transactions pu 
-      WHERE completed_at < "${year1}-${month1}-01" AND completed_at >= "${year2}-${month2}-01" AND status = "${Status.COMPLETED}"
+      WHERE completed_at < ? AND completed_at >= ? AND status = ?
       GROUP BY DATE_FORMAT(pu.completed_at, "%b")
-    `);
+    `, [currentPeriodStart, previousPeriodStart, Status.COMPLETED]);
 
     let returnData = [];
     for (let month of months) {
@@ -227,10 +249,15 @@ export class ProductService {
   }
 
   async getLast10Transactions() {
-    let month = moment(new Date()).format('MM');
-    let year = moment(new Date()).format('yyyy');
     return await this.productRepo.query(
-      `select u.fname as fname, u.lname as lname, p.name as productName, t.completed_at as date from transactions t inner join product p on p.id = t.product_id inner join user u on u.id = t.customer_id where t.status = "${Status.COMPLETED}" and t.completed_at >='${year}-${month}-01'`,
+      `select u.fname as fname, u.lname as lname, p.name as productName, t.completed_at as date
+      from transactions t
+      inner join product p on p.id = t.product_id
+      inner join user u on u.id = t.customer_id
+      where t.status = ?
+      order by t.completed_at desc
+      limit 10`,
+      [Status.COMPLETED],
     );
   }
 
