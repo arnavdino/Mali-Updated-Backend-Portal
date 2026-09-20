@@ -33,8 +33,7 @@ export declare class UsersService {
             lname: string;
             email: string;
             rewardPoints: number;
-            password: string;
-            nonexisting: string;
+            password?: string;
             cards: import("./card.dto").CreditCardDTO[];
             imageUrl: string;
             allowPush: boolean;

@@ -1,6 +1,6 @@
 import { AutoMap } from '@automapper/classes';
 import { CreditCardDTO } from './card.dto';
-import { IsNotEmpty, IsString, Matches, ValidateIf } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 import { LocationDTO } from './location.dto';
 import { RoleDto } from 'src/roles/role.dto';
 
@@ -34,20 +34,12 @@ export class UserDTO {
   rewardPoints: number;
 
   @AutoMap()
+  @IsOptional()
   @IsString()
-  password: string;
-
-  @ValidateIf((object) => {
-    return !(
-      object?.password?.length > 7 &&
-      hasSpecial(object?.password) &&
-      hasUpper(object?.password) &&
-      hasLower(object?.password) &&
-      hasNumber(object?.password)
-    );
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[*@$!#%&()^~{}\-_]).{8,}$/, {
+    message: 'password must be valid',
   })
-  @IsString({ message: 'password must be valid' })
-  nonexisting: string;
+  password?: string;
 
   cards: CreditCardDTO[];
 

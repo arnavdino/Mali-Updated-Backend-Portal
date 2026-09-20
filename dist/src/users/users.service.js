@@ -150,7 +150,7 @@ let UsersService = UsersService_1 = class UsersService {
                 });
             }
             else {
-                qb.andWhere("(concat(user.fname,' ',user.lname) like :filter or user.phone like :phoneFilter)", { filter: `%${filter}`, phoneFilter: `%${filter}%` });
+                qb.andWhere("(concat(user.fname,' ',user.lname) like :filter or user.phone like :phoneFilter)", { filter: `%${filter}%`, phoneFilter: `%${filter}%` });
             }
         }
         const [results, count] = await qb.getManyAndCount();

@@ -45,21 +45,13 @@ __decorate([
 ], UserDTO.prototype, "rewardPoints", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[*@$!#%&()^~{}\-_]).{8,}$/, {
+        message: 'password must be valid',
+    }),
     __metadata("design:type", String)
 ], UserDTO.prototype, "password", void 0);
-__decorate([
-    (0, class_validator_1.ValidateIf)((object) => {
-        var _a;
-        return !(((_a = object === null || object === void 0 ? void 0 : object.password) === null || _a === void 0 ? void 0 : _a.length) > 7 &&
-            hasSpecial(object === null || object === void 0 ? void 0 : object.password) &&
-            hasUpper(object === null || object === void 0 ? void 0 : object.password) &&
-            hasLower(object === null || object === void 0 ? void 0 : object.password) &&
-            hasNumber(object === null || object === void 0 ? void 0 : object.password));
-    }),
-    (0, class_validator_1.IsString)({ message: 'password must be valid' }),
-    __metadata("design:type", String)
-], UserDTO.prototype, "nonexisting", void 0);
 __decorate([
     (0, classes_1.AutoMap)(),
     __metadata("design:type", String)

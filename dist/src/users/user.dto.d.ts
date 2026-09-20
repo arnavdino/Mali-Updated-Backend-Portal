@@ -8,8 +8,7 @@ export declare class UserDTO {
     email: string;
     role: RoleDto;
     rewardPoints: number;
-    password: string;
-    nonexisting: string;
+    password?: string;
     cards: CreditCardDTO[];
     imageUrl: string;
     allowPush: boolean;

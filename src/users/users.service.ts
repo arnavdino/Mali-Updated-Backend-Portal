@@ -149,7 +149,7 @@ export class UsersService {
       } else {
         qb.andWhere(
           "(concat(user.fname,' ',user.lname) like :filter or user.phone like :phoneFilter)",
-          { filter: `%${filter}`, phoneFilter: `%${filter}%` },
+          { filter: `%${filter}%`, phoneFilter: `%${filter}%` },
         );
       }
     }
