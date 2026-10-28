@@ -15,6 +15,8 @@ export interface UploadedIdentityFile {
 @Injectable()
 export class FilesService {
   private s3: S3;
+  private identityDocumentsS3: S3;
+  private readonly identityDocumentsBucket: string;
   private logger = new Logger(FilesService.name);
   constructor(private configService: ConfigService) {
     const accessKeyId =
@@ -31,13 +33,21 @@ export class FilesService {
         ? new SharedIniFileCredentials({ profile })
         : undefined;
 
-    this.s3 = new S3({
+    const credentialsConfig = {
       accessKeyId,
       secretAccessKey,
       sessionToken,
       credentials,
-      region: 'ca-central-1',
+    };
+
+    this.s3 = new S3({ ...credentialsConfig, region: 'ca-central-1' });
+    this.identityDocumentsS3 = new S3({
+      ...credentialsConfig,
+      region: this.configService.get('IDENTITY_DOCUMENTS_REGION') || 'af-south-1',
     });
+    this.identityDocumentsBucket =
+      this.configService.get('IDENTITY_DOCUMENTS_BUCKET') ||
+      'finex-mali-private-documents';
   }
 
   async getImage(res, name: string) {
@@ -175,10 +185,9 @@ export class FilesService {
 
     const extension = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1];
     const key = `identity-documents/${userId}/${documentType}-${uuidv4()}.${extension}`;
-    await this.uploadToAWS({
+    await this.uploadIdentityDocumentToAWS({
       Body: file.buffer,
-      Bucket: 'halal-buket',
-      ACL: 'private',
+      Bucket: this.identityDocumentsBucket,
       ContentType: file.mimetype,
       Key: key,
       ServerSideEncryption: 'AES256',
@@ -187,11 +196,15 @@ export class FilesService {
   }
 
   getPrivateDocumentUrl(key: string): string {
-    return this.s3.getSignedUrl('getObject', {
-      Bucket: 'halal-buket',
+    return this.identityDocumentsS3.getSignedUrl('getObject', {
+      Bucket: this.identityDocumentsBucket,
       Key: key,
       Expires: 300,
     });
+  }
+
+  private uploadIdentityDocumentToAWS(props: S3.PutObjectRequest) {
+    return this.identityDocumentsS3.upload(props).promise();
   }
 
   async uploadImages(images, folder = 'images', resize = true) {

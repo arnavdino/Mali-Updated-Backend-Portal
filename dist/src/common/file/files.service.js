@@ -33,13 +33,17 @@ let FilesService = FilesService_1 = class FilesService {
             : profile
                 ? new aws_sdk_1.SharedIniFileCredentials({ profile })
                 : undefined;
-        this.s3 = new aws_sdk_1.S3({
+        const credentialsConfig = {
             accessKeyId,
             secretAccessKey,
             sessionToken,
             credentials,
-            region: 'ca-central-1',
-        });
+        };
+        this.s3 = new aws_sdk_1.S3(Object.assign(Object.assign({}, credentialsConfig), { region: 'ca-central-1' }));
+        this.identityDocumentsS3 = new aws_sdk_1.S3(Object.assign(Object.assign({}, credentialsConfig), { region: this.configService.get('IDENTITY_DOCUMENTS_REGION') || 'af-south-1' }));
+        this.identityDocumentsBucket =
+            this.configService.get('IDENTITY_DOCUMENTS_BUCKET') ||
+                'finex-mali-private-documents';
     }
     async getImage(res, name) {
         try {
@@ -159,10 +163,9 @@ let FilesService = FilesService_1 = class FilesService {
         }
         const extension = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1];
         const key = `identity-documents/${userId}/${documentType}-${(0, uuid_1.v4)()}.${extension}`;
-        await this.uploadToAWS({
+        await this.uploadIdentityDocumentToAWS({
             Body: file.buffer,
-            Bucket: 'halal-buket',
-            ACL: 'private',
+            Bucket: this.identityDocumentsBucket,
             ContentType: file.mimetype,
             Key: key,
             ServerSideEncryption: 'AES256',
@@ -170,11 +173,14 @@ let FilesService = FilesService_1 = class FilesService {
         return key;
     }
     getPrivateDocumentUrl(key) {
-        return this.s3.getSignedUrl('getObject', {
-            Bucket: 'halal-buket',
+        return this.identityDocumentsS3.getSignedUrl('getObject', {
+            Bucket: this.identityDocumentsBucket,
             Key: key,
             Expires: 300,
         });
+    }
+    uploadIdentityDocumentToAWS(props) {
+        return this.identityDocumentsS3.upload(props).promise();
     }
     async uploadImages(images, folder = 'images', resize = true) {
         let imagesUrls = [];

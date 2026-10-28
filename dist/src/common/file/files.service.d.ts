@@ -9,6 +9,8 @@ export interface UploadedIdentityFile {
 export declare class FilesService {
     private configService;
     private s3;
+    private identityDocumentsS3;
+    private readonly identityDocumentsBucket;
     private logger;
     constructor(configService: ConfigService);
     getImage(res: any, name: string): Promise<void>;
@@ -18,6 +20,7 @@ export declare class FilesService {
     fileupload(res: any, afterUpload: Function, file: any, folder?: string): Promise<any>;
     uploadIdentityDocument(file: UploadedIdentityFile, userId: string, documentType: string): Promise<string>;
     getPrivateDocumentUrl(key: string): string;
+    private uploadIdentityDocumentToAWS;
     uploadImages(images: any, folder?: string, resize?: boolean): Promise<{
         imagesUrls: any[];
         ratios: number[];
