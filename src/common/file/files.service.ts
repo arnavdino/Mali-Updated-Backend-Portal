@@ -17,8 +17,12 @@ export class FilesService {
   private s3: S3;
   private logger = new Logger(FilesService.name);
   constructor(private configService: ConfigService) {
-    const accessKeyId = this.configService.get('ACCESS_KEY');
-    const secretAccessKey = this.configService.get('AWS_SECRET_KEY');
+    const accessKeyId =
+      this.configService.get('AWS_ACCESS_KEY_ID') || this.configService.get('ACCESS_KEY');
+    const secretAccessKey =
+      this.configService.get('AWS_SECRET_ACCESS_KEY') ||
+      this.configService.get('AWS_SECRET_KEY');
+    const sessionToken = this.configService.get('AWS_SESSION_TOKEN');
     const profile = this.configService.get('AWS_PROFILE');
     const credentials =
       accessKeyId && secretAccessKey
@@ -30,6 +34,7 @@ export class FilesService {
     this.s3 = new S3({
       accessKeyId,
       secretAccessKey,
+      sessionToken,
       credentials,
       region: 'ca-central-1',
     });
