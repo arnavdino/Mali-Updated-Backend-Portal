@@ -1,0 +1,32 @@
+import { LocationDTO } from 'src/users/location.dto';
+import { WarehouseDTO } from './warehouse.dto';
+export declare class WarehouseManagerDTO {
+    id: string;
+    fname: string;
+    lname: string;
+    phone: string;
+    dob: string;
+    age: number;
+    schooled: boolean;
+    organization: number;
+    createdAt: Date;
+    gender: string;
+    nina: string;
+    warehouse: WarehouseDTO;
+    numOfChildren: number;
+    maritalStatus: string;
+    language: string;
+    location: LocationDTO;
+    deleted: boolean;
+    literacyLevel: string;
+    totalProducts: number;
+    otherIncomActivities: string;
+    facilitationActivity: string;
+    otherSuppliers: string;
+    localOrganizations: number;
+    infrastructure: string;
+    logisticsAndProductionMeans: string;
+    surfaceAreaOfFarm: number;
+    status: string;
+    headquarters: string;
+}

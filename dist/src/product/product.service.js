@@ -1,0 +1,472 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProductService = void 0;
+const common_1 = require("@nestjs/common");
+const create_product_dto_1 = require("./dto/create-product.dto");
+const product_entity_1 = require("./entities/product.entity");
+const typeorm_1 = require("typeorm");
+const typeorm_2 = require("@nestjs/typeorm");
+const nestjs_1 = require("@automapper/nestjs");
+const uuid_1 = require("uuid");
+const promotion_service_1 = require("../promotion/promotion.service");
+const transactions_entity_1 = require("../transactions/transactions.entity");
+const moment = require("moment-timezone");
+let ProductService = class ProductService {
+    constructor(productRepo, classMapper, promotionService) {
+        this.productRepo = productRepo;
+        this.classMapper = classMapper;
+        this.promotionService = promotionService;
+    }
+    async create(user, createProductDto) {
+        var _a, _b;
+        let product = this.classMapper.map(createProductDto, create_product_dto_1.CreateProductDto, product_entity_1.Product);
+        if (await this.productRepo.findOne({ where: { name: product.name } })) {
+            throw new common_1.BadRequestException(`product with name "${product.name}" already exists`);
+        }
+        product.createdBy = { id: user.id };
+        if ((_a = createProductDto.parent) === null || _a === void 0 ? void 0 : _a.id) {
+            product.parent = { id: (_b = createProductDto.parent) === null || _b === void 0 ? void 0 : _b.id };
+        }
+        else {
+            delete product.parent;
+        }
+        product.numLeft = product.numAvail;
+        product.id = (0, uuid_1.v4)();
+        await this.productRepo.save(product);
+        return { id: product.id };
+    }
+    mapDao(product) {
+        const { id, name, imageUrl, price, unit, description } = this.classMapper.map(product, product_entity_1.Product, create_product_dto_1.CreateProductDto);
+        return { id, name, imageUrl, price, unit, description };
+    }
+    async search(search, category = '*') {
+        let allProducts = await this.productRepo
+            .createQueryBuilder('product')
+            .innerJoin('product.parent', 'parent')
+            .where(`product.level = 'product'`)
+            .andWhere(`parent.status = 'active'`)
+            .andWhere(`product.status = 'active'`)
+            .andWhere(category === '*' ? '1 = 1' : 'product.parent_id = :category', {
+            category,
+        })
+            .andWhere(new typeorm_1.Brackets((qb) => {
+            qb.where('product.name like :search', {
+                search: `%${search}%`,
+            }).orWhere('parent.name like :search', { search: `%${search}%` });
+        }))
+            .take(50)
+            .orderBy('product.createdAt', 'DESC')
+            .select([
+            'product.name',
+            'product.level',
+            'product.createdAt',
+            'product.id',
+            'product.price',
+            'product.rewardRatio',
+            'product.productKind',
+            'product.unit',
+            'product.description',
+            'product.imageUrl',
+            'product.presentation',
+            'parent.status',
+        ])
+            .getMany();
+        return allProducts.map((p) => (Object.assign(Object.assign({}, this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto)), { productKind: p.productKind })));
+    }
+    async findMain() {
+        let featured = await this.productRepo
+            .createQueryBuilder('product')
+            .where({
+            presentation: product_entity_1.Presentation.FEATURED,
+        })
+            .take(20)
+            .orderBy('product.createdAt', 'DESC')
+            .select([
+            'product.name',
+            'product.id',
+            'product.price',
+            'product.rewardRatio',
+            'product.unit',
+            'product.description',
+            'product.imageUrl',
+            'product.presentation',
+        ])
+            .getMany();
+        let categories = await this.productRepo.query('select p.id as id, p.image_url as imageUrl, p.name as name, p.price, p.reward_ratio, p.unit, p.description from product p inner join product child on p.id = child.parent_id where child.level = "product" and child.status ="active" and p.status ="active" group by p.id limit 5');
+        return {
+            mainProducts: categories.map((p) => this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto)),
+            featuredProducts: featured.map((p) => this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto)),
+            promotion: await this.promotionService.findMain(),
+        };
+    }
+    async getFeaturedProducts() {
+        let product = await this.productRepo.query("select p.id as id, p.name as name, p.price as price, p.reward_ratio as rewardRatio, p.unit as unit, p.image_url as imageUrl, c.name as parent from product p inner join product c on c.id = p.parent_id where p.presentation = 'featured' and p.status = 'active' and c.status = 'active' order by p.created_at desc limit 5");
+        return product;
+    }
+    async getActiveProducts() {
+        const currentMonthStart = moment().startOf('month').format('YYYY-MM-DD');
+        const nextMonthStart = moment().add(1, 'month').startOf('month').format('YYYY-MM-DD');
+        const previousMonthStart = moment()
+            .subtract(1, 'month')
+            .startOf('month')
+            .format('YYYY-MM-DD');
+        return this.productRepo.query(`select p.name as name,
+        coalesce(sum(case when pr.completed_at >= ? and pr.completed_at < ? then pr.amount * pr.quantity + coalesce(pr.fee_1, 0) + coalesce(pr.fee_2, 0) + coalesce(pr.fee_3, 0) else 0 end), 0) as cur,
+        coalesce(sum(case when pr.completed_at >= ? and pr.completed_at < ? then pr.amount * pr.quantity + coalesce(pr.fee_1, 0) + coalesce(pr.fee_2, 0) + coalesce(pr.fee_3, 0) else 0 end), 0) as prev
+      from transactions pr
+      inner join product p on p.id = pr.product_id
+      where pr.status = ? and p.status = 'active' and pr.completed_at >= ? and pr.completed_at < ?
+      group by p.id, p.name
+      order by cur desc, p.name asc
+      limit 5`, [
+            currentMonthStart,
+            nextMonthStart,
+            previousMonthStart,
+            currentMonthStart,
+            transactions_entity_1.Status.COMPLETED,
+            previousMonthStart,
+            nextMonthStart,
+        ]);
+    }
+    async getRevenueSummary() {
+        const currentMonthStart = moment().startOf('month').format('YYYY-MM-DD');
+        const nextMonthStart = moment().add(1, 'month').startOf('month').format('YYYY-MM-DD');
+        let data = await this.productRepo.query(`select p.name as name,
+        coalesce(sum(t.amount * t.quantity + coalesce(t.fee_1, 0) + coalesce(t.fee_2, 0) + coalesce(t.fee_3, 0)), 0) as value
+      from transactions t
+      inner join product p on p.id = t.product_category
+      where t.completed_at >= ? and t.completed_at < ? and t.status = ?
+      group by t.product_category, p.name
+      order by value desc, p.name asc
+      limit 5`, [currentMonthStart, nextMonthStart, transactions_entity_1.Status.COMPLETED]);
+        return data;
+    }
+    async getLast12Months() {
+        let months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+        ];
+        let month1 = moment(new Date()).subtract(11, 'month').format('MM');
+        let year1 = moment(new Date()).subtract(11, 'month').format('YYYY');
+        if (+moment(new Date()).format('MM') < 12) {
+            months = months.concat(months.splice(0, +moment(new Date()).format('MM')));
+        }
+        let month2 = moment(new Date()).subtract(23, 'month').format('MM');
+        let year2 = moment(new Date()).subtract(23, 'month').format('YYYY');
+        const currentPeriodStart = `${year1}-${month1}-01`;
+        const nextMonthStart = moment().add(1, 'month').startOf('month').format('YYYY-MM-DD');
+        const previousPeriodStart = `${year2}-${month2}-01`;
+        let data = await this.productRepo.query(`
+    SELECT 
+      DATE_FORMAT(pu.completed_at, "%b") AS name, 
+      SUM(pu.amount * pu.quantity + pu.fee_1 + pu.fee_2 + pu.fee_3) AS "cur"
+      FROM transactions pu 
+      WHERE completed_at >= ? AND completed_at < ? AND status = ?
+      GROUP BY DATE_FORMAT(pu.completed_at, "%b")
+    `, [currentPeriodStart, nextMonthStart, transactions_entity_1.Status.COMPLETED]);
+        let data2 = await this.productRepo.query(`
+    SELECT 
+      DATE_FORMAT(pu.completed_at, "%b") AS name, 
+      SUM(pu.amount * pu.quantity + pu.fee_1 + pu.fee_2 + pu.fee_3) AS "prev"
+      FROM transactions pu 
+      WHERE completed_at < ? AND completed_at >= ? AND status = ?
+      GROUP BY DATE_FORMAT(pu.completed_at, "%b")
+    `, [currentPeriodStart, previousPeriodStart, transactions_entity_1.Status.COMPLETED]);
+        let returnData = [];
+        for (let month of months) {
+            let entry1 = data.find((d) => d.name == month);
+            let entry2 = data2.find((d) => d.name == month);
+            returnData.push({
+                name: month,
+                cur: (entry1 === null || entry1 === void 0 ? void 0 : entry1['cur']) || 0,
+                prev: (entry2 === null || entry2 === void 0 ? void 0 : entry2['prev']) || 0,
+            });
+        }
+        return { data: returnData, thisYear: 'cur', lastYear: 'prev' };
+    }
+    async getLast10Transactions() {
+        return await this.productRepo.query(`select u.fname as fname, u.lname as lname, p.name as productName, t.completed_at as date
+      from transactions t
+      inner join product p on p.id = t.product_id
+      inner join user u on u.id = t.customer_id
+      where t.status = ?
+      order by t.completed_at desc
+      limit 10`, [transactions_entity_1.Status.COMPLETED]);
+    }
+    async addImageToProduct(id, userId, url) {
+        let product = await this.productRepo.findOne({
+            where: { id },
+        });
+        if (!product) {
+            throw Error('bad resource management');
+        }
+        product.imageUrl = url;
+        this.productRepo.save(product);
+    }
+    async findAllForUser(filter) {
+        let where = {
+            level: product_entity_1.Level.PRODUCT,
+            status: product_entity_1.ProductStatus.ACTIVE,
+            parent: { status: product_entity_1.ProductStatus.ACTIVE },
+        };
+        if (filter) {
+            where = Object.assign(Object.assign({}, where), { parent: Object.assign(Object.assign({}, where.parent), { id: filter }) });
+        }
+        let products = await this.productRepo
+            .createQueryBuilder('product')
+            .innerJoin('product.parent', 'parent')
+            .where(where)
+            .select([
+            'product.name',
+            'product.id',
+            'product.price',
+            'product.rewardRatio',
+            'product.unit',
+            'product.description',
+            'product.imageUrl',
+        ])
+            .getMany();
+        let categories = await this.productRepo.query('select p.id as id, p.image_url as imageUrl, p.name as name from product p inner join product child on p.id = child.parent_id where child.level = "product" and child.status ="active" and p.status ="active" group by p.id');
+        const returnedProducts = products.map((p) => {
+            return this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto);
+        });
+        return {
+            products: returnedProducts,
+            categories,
+            loadMore: false,
+            skip: 1,
+        };
+    }
+    async getCategories(filter, parentId, includeSubs = false) {
+        const categoryQuery = this.productRepo
+            .createQueryBuilder('product')
+            .select([
+            'product.id AS id',
+            'product.name AS name',
+            'product.image_url AS imageUrl',
+            'product.status AS status',
+        ])
+            .where('product.level = :level', {
+            level: parentId ? product_entity_1.Level.SUB_CATEGORY : product_entity_1.Level.CATEGORY,
+        });
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('_@@')) {
+            const status = filter.replace('_@@', '');
+            if (!Object.values(product_entity_1.ProductStatus).includes(status)) {
+                throw new common_1.BadRequestException('invalid filter');
+            }
+            categoryQuery.andWhere('product.status = :status', { status });
+        }
+        else if (filter) {
+            categoryQuery.andWhere('product.name like :filter', { filter: `%${filter}%` });
+        }
+        if (parentId) {
+            categoryQuery.andWhere('product.parent_id = :parentId', { parentId });
+        }
+        const [categories, subCategories] = await Promise.all([
+            categoryQuery.getRawMany(),
+            includeSubs
+                ? this.productRepo
+                    .createQueryBuilder('product')
+                    .select([
+                    'product.id AS id',
+                    'product.name AS name',
+                    'product.image_url AS imageUrl',
+                    'product.status AS status',
+                    'product.parent_id AS parent_id',
+                ])
+                    .where('product.level = :level', { level: product_entity_1.Level.SUB_CATEGORY })
+                    .getRawMany()
+                : undefined,
+        ]);
+        return categories.map((cat) => (Object.assign(Object.assign({}, cat), { subCategories: (subCategories === null || subCategories === void 0 ? void 0 : subCategories.filter((p) => p.parent_id == cat.id)) || [] })));
+    }
+    async findAll(filter, meta) {
+        if (meta.rowsPerPage < 0 || meta.page < 0) {
+            throw Error('Invalid pagination meta');
+        }
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('"')) {
+            throw new common_1.BadRequestException('invalid filter');
+        }
+        let order = 'ASC';
+        let field = 'product.createdAt';
+        if (meta.sortable) {
+            const sortableFields = ['name', 'price', 'status', 'createdAt'];
+            if (!sortableFields.includes(meta.sortable.field)) {
+                throw new common_1.BadRequestException('invalid sort field');
+            }
+            field = `product.${meta.sortable.field}`;
+            order = meta.sortable.order;
+        }
+        const query = this.productRepo
+            .createQueryBuilder('product')
+            .innerJoin('product.parent', 'parent')
+            .orderBy(field, order)
+            .skip(meta.rowsPerPage * (meta.page - 1))
+            .take(meta.rowsPerPage)
+            .select([
+            'product.name',
+            'product.id',
+            'product.price',
+            'product.rewardRatio',
+            'product.unit',
+            'product.status',
+            'product.description',
+            'product.imageUrl',
+            'product.createdAt',
+            'parent.name',
+            'parent.id',
+        ])
+            .where('product.level = :level', { level: product_entity_1.Level.PRODUCT });
+        if (filter === null || filter === void 0 ? void 0 : filter.includes('_@@')) {
+            const status = filter.replace('_@@', '');
+            if (!Object.values(product_entity_1.ProductStatus).includes(status)) {
+                throw new common_1.BadRequestException('invalid filter');
+            }
+            query.andWhere('product.status = :status', { status });
+        }
+        else if (filter) {
+            query.andWhere('(parent.name like :filter or product.name like :filter)', {
+                filter: `%${filter}%`,
+            });
+        }
+        const [results, count] = await query.getManyAndCount();
+        let products = results.map((p) => {
+            return this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto);
+        });
+        return { products, count };
+    }
+    async findOne(id) {
+        var _a, _b;
+        const db = await this.productRepo.findOne(id, {
+            relations: ['parent', 'parent.parent'],
+        });
+        let product = this.classMapper.map(db, product_entity_1.Product, create_product_dto_1.CreateProductDto);
+        product.productKind = db.productKind;
+        product.longDescription = db.longDescription;
+        product.sections = db.sections;
+        if (product.parent) {
+            product.parent = {
+                name: db.parent.name,
+                id: db.parent.id,
+                parent: { id: (_a = db.parent.parent) === null || _a === void 0 ? void 0 : _a.id, name: (_b = db.parent.parent) === null || _b === void 0 ? void 0 : _b.name },
+            };
+        }
+        return {
+            product,
+        };
+    }
+    async update(id, updateProductDto) {
+        var _a;
+        let product = this.classMapper.map(updateProductDto, create_product_dto_1.CreateProductDto, product_entity_1.Product);
+        const oldProduct = await this.productRepo.findOne(id);
+        product.id = id;
+        if (!((_a = product.parent) === null || _a === void 0 ? void 0 : _a.id)) {
+            delete product.parent;
+        }
+        await this.productRepo.save(Object.assign(Object.assign({}, oldProduct), product));
+    }
+    async remove(id) {
+        if ((await this.productRepo.query('Select count(*) as count from purchase_product where product_id = ?', [id]))[0].count > 0) {
+            throw Error("cannot delete a product that's been purchased!");
+        }
+        await this.productRepo.delete(id);
+        return 'deleted';
+    }
+    async removeBatch(ids) {
+        await Promise.all(ids.map(async (id) => await this.remove(id)));
+        return 'deleted';
+    }
+    async changeStateBatch(ids, state) {
+        if (!Object.values(product_entity_1.ProductStatus).includes(state)) {
+            throw Error('invalid state change');
+        }
+        await Promise.all(ids.map(async (id) => await this.productRepo.update(id, { status: state })));
+        return 'changed';
+    }
+    async searchCategories(search) {
+        let allProducts = await this.productRepo
+            .createQueryBuilder('product')
+            .where(`product.level = 'category'`)
+            .andWhere(`product.status = 'active'`)
+            .andWhere(new typeorm_1.Brackets((qb) => {
+            qb.where('product.name like :search', {
+                search: `%${search}%`,
+            });
+        }))
+            .take(50)
+            .orderBy('product.createdAt', 'DESC')
+            .select([
+            'product.name',
+            'product.level',
+            'product.createdAt',
+            'product.id',
+            'product.price',
+            'product.rewardRatio',
+            'product.unit',
+            'product.description',
+            'product.imageUrl',
+            'product.presentation',
+        ])
+            .getMany();
+        return allProducts.map((p) => this.classMapper.map(p, product_entity_1.Product, create_product_dto_1.CreateProductDto));
+    }
+    async getKitComponents() {
+        const approvedComponentNames = [
+            'npk',
+            'uree',
+            'urea',
+            'urée',
+            'herbicide',
+            'insecticide',
+            'appui conseil',
+        ];
+        return this.productRepo
+            .createQueryBuilder('product')
+            .where('product.status = :status', { status: product_entity_1.ProductStatus.ACTIVE })
+            .andWhere('product.productKind IN (:...kinds)', {
+            kinds: [product_entity_1.ProductKind.ITEM, product_entity_1.ProductKind.SERVICE],
+        })
+            .andWhere('LOWER(product.name) IN (:...names)', {
+            names: approvedComponentNames,
+        })
+            .select([
+            'product.id',
+            'product.name',
+            'product.unit',
+            'product.productKind',
+            'product.tracksInventory',
+        ])
+            .orderBy('product.name', 'ASC')
+            .getMany();
+    }
+};
+ProductService = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_2.InjectRepository)(product_entity_1.Product)),
+    __param(1, (0, nestjs_1.InjectMapper)()),
+    __metadata("design:paramtypes", [typeorm_1.Repository, Object, promotion_service_1.PromotionService])
+], ProductService);
+exports.ProductService = ProductService;
+//# sourceMappingURL=product.service.js.map
