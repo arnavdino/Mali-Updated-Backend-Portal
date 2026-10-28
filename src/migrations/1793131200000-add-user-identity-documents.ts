@@ -6,7 +6,7 @@ export class addUserIdentityDocuments1793131200000 implements MigrationInterface
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE TABLE \`user_identity_document\` (
       \`id\` varchar(255) NOT NULL,
-      \`user_id\` varchar(255) NOT NULL,
+      \`user_id\` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
       \`document_type\` varchar(64) NOT NULL,
       \`storage_key\` varchar(512) NOT NULL,
       \`original_filename\` varchar(255) NOT NULL,
@@ -21,7 +21,7 @@ export class addUserIdentityDocuments1793131200000 implements MigrationInterface
       PRIMARY KEY (\`id\`),
       UNIQUE KEY \`IDX_identity_document_user_type\` (\`user_id\`, \`document_type\`),
       CONSTRAINT \`FK_identity_document_user\` FOREIGN KEY (\`user_id\`) REFERENCES \`user\`(\`id\`) ON DELETE CASCADE
-    ) ENGINE=InnoDB`);
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

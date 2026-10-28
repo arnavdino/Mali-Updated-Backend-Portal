@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3 } from 'aws-sdk';
+import { S3, SharedIniFileCredentials } from 'aws-sdk';
 import * as sharp from 'sharp';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -17,9 +17,20 @@ export class FilesService {
   private s3: S3;
   private logger = new Logger(FilesService.name);
   constructor(private configService: ConfigService) {
+    const accessKeyId = this.configService.get('ACCESS_KEY');
+    const secretAccessKey = this.configService.get('AWS_SECRET_KEY');
+    const profile = this.configService.get('AWS_PROFILE');
+    const credentials =
+      accessKeyId && secretAccessKey
+        ? undefined
+        : profile
+        ? new SharedIniFileCredentials({ profile })
+        : undefined;
+
     this.s3 = new S3({
-      accessKeyId: this.configService.get('ACCESS_KEY'),
-      secretAccessKey: this.configService.get('AWS_SECRET_KEY'),
+      accessKeyId,
+      secretAccessKey,
+      credentials,
       region: 'ca-central-1',
     });
   }
