@@ -35,6 +35,10 @@ let PermissionsService = class PermissionsService {
                 subject: permissions_1.PermissionSubject.role,
                 action: this.allActions,
             },
+            {
+                subject: permissions_1.PermissionSubject.identity_document,
+                action: this.allActions,
+            },
         ];
     }
     findAll() {

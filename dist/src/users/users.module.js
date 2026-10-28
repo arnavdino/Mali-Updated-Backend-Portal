@@ -17,6 +17,7 @@ const helpers_module_1 = require("../helpers/helpers.module");
 const stripe_module_1 = require("../stripe/stripe.module");
 const user_controller_1 = require("./user.controller");
 const user_entity_1 = require("./user.entity");
+const user_identity_document_entity_1 = require("./user-identity-document.entity");
 const user_mapper_1 = require("./user.mapper");
 const users_service_1 = require("./users.service");
 const role_module_1 = require("../roles/role.module");
@@ -33,7 +34,7 @@ let UsersModule = class UsersModule {
 UsersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, user_identity_document_entity_1.UserIdentityDocument]),
             helpers_module_1.HelpersModule,
             stripe_module_1.StripeModule,
             events_module_1.EventsModule,

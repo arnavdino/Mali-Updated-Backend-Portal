@@ -1,4 +1,11 @@
+/// <reference types="node" />
 import { ConfigService } from '@nestjs/config';
+export interface UploadedIdentityFile {
+    buffer: Buffer;
+    mimetype: string;
+    originalname: string;
+    size: number;
+}
 export declare class FilesService {
     private configService;
     private s3;
@@ -9,6 +16,8 @@ export declare class FilesService {
     uploadToAWS(props: any): Promise<unknown>;
     sharpify(originalFile: any, resize: boolean): Promise<any[]>;
     fileupload(res: any, afterUpload: Function, file: any, folder?: string): Promise<any>;
+    uploadIdentityDocument(file: UploadedIdentityFile, userId: string, documentType: string): Promise<string>;
+    getPrivateDocumentUrl(key: string): string;
     uploadImages(images: any, folder?: string, resize?: boolean): Promise<{
         imagesUrls: any[];
         ratios: number[];

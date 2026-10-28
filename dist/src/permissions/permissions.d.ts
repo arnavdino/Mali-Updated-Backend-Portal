@@ -26,6 +26,7 @@ export declare enum PermissionSubject {
     transactions = "transactions",
     vendor = "vendor",
     warehouse = "warehouse",
-    manager = "manager"
+    manager = "manager",
+    identity_document = "identity_document"
 }
 export declare const permissions: Permission[];

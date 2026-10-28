@@ -136,6 +136,34 @@ let FilesService = FilesService_1 = class FilesService {
             return res.status(500).json(`Failed to  upload file`);
         }
     }
+    async uploadIdentityDocument(file, userId, documentType) {
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        const maxFileSize = 10 * 1024 * 1024;
+        if (!file || !allowedMimeTypes.includes(file.mimetype)) {
+            throw new common_1.BadRequestException('Only JPG, PNG, and PDF identity documents are allowed');
+        }
+        if (file.size > maxFileSize) {
+            throw new common_1.BadRequestException('Identity documents must be 10 MB or smaller');
+        }
+        const extension = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1];
+        const key = `identity-documents/${userId}/${documentType}-${(0, uuid_1.v4)()}.${extension}`;
+        await this.uploadToAWS({
+            Body: file.buffer,
+            Bucket: 'halal-buket',
+            ACL: 'private',
+            ContentType: file.mimetype,
+            Key: key,
+            ServerSideEncryption: 'AES256',
+        });
+        return key;
+    }
+    getPrivateDocumentUrl(key) {
+        return this.s3.getSignedUrl('getObject', {
+            Bucket: 'halal-buket',
+            Key: key,
+            Expires: 300,
+        });
+    }
     async uploadImages(images, folder = 'images', resize = true) {
         let imagesUrls = [];
         let ratios = [];

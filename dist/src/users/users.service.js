@@ -39,14 +39,64 @@ const fs = require("fs");
 const path = require("path");
 const StreamArray = require("stream-json/streamers/StreamArray");
 const location_entity_1 = require("./location.entity");
+const user_identity_document_entity_1 = require("./user-identity-document.entity");
+const files_service_1 = require("../common/file/files.service");
 const moment = require("moment-timezone");
 const DEFAULT_CREATED_USER_PASSWORD = 'Farmer2026!';
 let UsersService = UsersService_1 = class UsersService {
-    constructor(classMapper, userRepository, roleService) {
+    constructor(classMapper, userRepository, identityDocumentRepository, roleService, filesService) {
         this.classMapper = classMapper;
         this.userRepository = userRepository;
+        this.identityDocumentRepository = identityDocumentRepository;
         this.roleService = roleService;
+        this.filesService = filesService;
         this.logger = new common_1.Logger(UsersService_1.name);
+    }
+    async getIdentityDocuments(userId) {
+        await this.ensureUserExists(userId);
+        const documents = await this.identityDocumentRepository.find({
+            where: { userId },
+            order: { documentType: 'ASC' },
+        });
+        return documents.map((document) => (Object.assign(Object.assign({}, document), { viewUrl: this.filesService.getPrivateDocumentUrl(document.storageKey) })));
+    }
+    async addIdentityDocument(userId, documentType, file) {
+        if (!Object.values(user_identity_document_entity_1.IdentityDocumentType).includes(documentType)) {
+            throw new common_1.BadRequestException('Invalid identity document type');
+        }
+        await this.ensureUserExists(userId);
+        const storageKey = await this.filesService.uploadIdentityDocument(file, userId, documentType);
+        const existing = await this.identityDocumentRepository.findOne({
+            where: { userId, documentType: documentType },
+        });
+        const document = this.identityDocumentRepository.create(Object.assign(Object.assign({}, (existing || { id: (0, uuid_1.v4)(), userId })), { documentType: documentType, storageKey, originalFilename: file.originalname.slice(0, 255), mimeType: file.mimetype, fileSize: file.size, status: user_identity_document_entity_1.IdentityDocumentStatus.PENDING, reviewedAt: null, reviewedBy: null, rejectionReason: null }));
+        const saved = await this.identityDocumentRepository.save(document);
+        return Object.assign(Object.assign({}, saved), { viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) });
+    }
+    async reviewIdentityDocument(documentId, status, reviewedBy, rejectionReason) {
+        if (![user_identity_document_entity_1.IdentityDocumentStatus.APPROVED, user_identity_document_entity_1.IdentityDocumentStatus.REJECTED].includes(status)) {
+            throw new common_1.BadRequestException('Identity documents can only be approved or rejected');
+        }
+        if (status === user_identity_document_entity_1.IdentityDocumentStatus.REJECTED && !(rejectionReason === null || rejectionReason === void 0 ? void 0 : rejectionReason.trim())) {
+            throw new common_1.BadRequestException('A rejection reason is required');
+        }
+        const document = await this.identityDocumentRepository.findOne(documentId);
+        if (!document) {
+            throw new common_1.BadRequestException('Cannot find identity document');
+        }
+        document.status = status;
+        document.reviewedBy = reviewedBy;
+        document.reviewedAt = new Date();
+        document.rejectionReason = status === user_identity_document_entity_1.IdentityDocumentStatus.REJECTED ? rejectionReason.trim().slice(0, 500) : null;
+        const saved = await this.identityDocumentRepository.save(document);
+        return Object.assign(Object.assign({}, saved), { viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) });
+    }
+    async ensureUserExists(userId) {
+        const user = await this.userRepository.findOne(userId);
+        if (!user) {
+            throw new common_1.BadRequestException(`Cannot find user of id ${userId}`);
+        }
+        return user;
     }
     async register(user) {
         let entity = this.classMapper.map(user, user_dto_1.UserDTO, user_entity_1.User);
@@ -88,6 +138,7 @@ let UsersService = UsersService_1 = class UsersService {
         const salt = await bcrypt.genSalt();
         entity.password = await bcrypt.hash(DEFAULT_CREATED_USER_PASSWORD, salt);
         entity = await this.userRepository.save(entity);
+        return entity;
     }
     async update(user, id) {
         let existingUser = await this.userRepository.findOne(id, {
@@ -107,6 +158,7 @@ let UsersService = UsersService_1 = class UsersService {
         entity.verified = user.status == interfaces_1.userStatus.ACTIVE;
         entity.age = moment().diff(entity.dob, `years`);
         entity = await this.userRepository.save(entity);
+        return entity;
     }
     async getUsers(filter, isCustomer, meta) {
         if (meta.rowsPerPage < 0 || meta.page < 0) {
@@ -456,8 +508,11 @@ UsersService = UsersService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, nestjs_1.InjectMapper)()),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(2, (0, typeorm_1.InjectRepository)(user_identity_document_entity_1.UserIdentityDocument)),
     __metadata("design:paramtypes", [Object, typeorm_2.Repository,
-        role_service_1.RoleService])
+        typeorm_2.Repository,
+        role_service_1.RoleService,
+        files_service_1.FilesService])
 ], UsersService);
 exports.UsersService = UsersService;
 //# sourceMappingURL=users.service.js.map

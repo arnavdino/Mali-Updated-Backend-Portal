@@ -49,6 +49,15 @@ let AdminUserController = AdminUserController_1 = class AdminUserController {
     async uploadItem(req, res, file) {
         return await this.fileService.fileupload(res, (name) => this.userService.addImage(req.params.id, name), file);
     }
+    async getIdentityDocuments(req, res) {
+        return this.appService.formatResponse(this.logger, this.userService.getIdentityDocuments(req.params.id), res, `getting identity documents for ${req.params.id} by ${req.user.id}`);
+    }
+    async uploadIdentityDocument(req, res, file, documentType) {
+        return this.appService.formatResponse(this.logger, this.userService.addIdentityDocument(req.params.id, documentType, file), res, `uploading ${documentType} for ${req.params.id} by ${req.user.id}`);
+    }
+    async reviewIdentityDocument(req, res, body) {
+        return this.appService.formatResponse(this.logger, this.userService.reviewIdentityDocument(req.params.documentId, body.status, req.user.id, body.rejectionReason), res, `reviewing identity document ${req.params.documentId} by ${req.user.id}`);
+    }
     async deleteUser(req, res) {
         return this.appService.formatResponse(this.logger, this.userService.deleteUser(req.params.id), res, `deleting user ${req.params.id} by ${req.user.id} `);
     }
@@ -131,6 +140,40 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AdminUserController.prototype, "uploadItem", null);
+__decorate([
+    (0, common_1.Get)(':id/identity-documents'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.read, permissions_1.PermissionSubject.identity_document)),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Response)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AdminUserController.prototype, "getIdentityDocuments", null);
+__decorate([
+    (0, common_1.Post)(':id/identity-documents'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.create, permissions_1.PermissionSubject.identity_document)),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('upload', { limits: { fileSize: 10 * 1024 * 1024 } })),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Response)()),
+    __param(2, (0, common_1.UploadedFile)()),
+    __param(3, (0, common_1.Body)('documentType')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object, String]),
+    __metadata("design:returntype", Promise)
+], AdminUserController.prototype, "uploadIdentityDocument", null);
+__decorate([
+    (0, common_1.Put)('identity-documents/:documentId/review'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.update, permissions_1.PermissionSubject.identity_document)),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Response)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AdminUserController.prototype, "reviewIdentityDocument", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),

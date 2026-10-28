@@ -16,6 +16,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as StreamArray from 'stream-json/streamers/StreamArray';
 import { LocationEntity } from './location.entity';
+import {
+  IdentityDocumentStatus,
+  IdentityDocumentType,
+  UserIdentityDocument,
+} from './user-identity-document.entity';
+import { FilesService, UploadedIdentityFile } from 'src/common/file/files.service';
 import * as moment from 'moment-timezone';
 
 const DEFAULT_CREATED_USER_PASSWORD = 'Farmer2026!';
@@ -27,8 +33,84 @@ export class UsersService {
     @InjectMapper() private readonly classMapper: Mapper,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(UserIdentityDocument)
+    private identityDocumentRepository: Repository<UserIdentityDocument>,
     private roleService: RoleService,
+    private filesService: FilesService,
   ) {}
+
+  async getIdentityDocuments(userId: string) {
+    await this.ensureUserExists(userId);
+    const documents = await this.identityDocumentRepository.find({
+      where: { userId },
+      order: { documentType: 'ASC' },
+    });
+    return documents.map((document) => ({
+      ...document,
+      viewUrl: this.filesService.getPrivateDocumentUrl(document.storageKey),
+    }));
+  }
+
+  async addIdentityDocument(
+    userId: string,
+    documentType: string,
+    file: UploadedIdentityFile,
+  ) {
+    if (!Object.values(IdentityDocumentType).includes(documentType as IdentityDocumentType)) {
+      throw new BadRequestException('Invalid identity document type');
+    }
+    await this.ensureUserExists(userId);
+    const storageKey = await this.filesService.uploadIdentityDocument(file, userId, documentType);
+    const existing = await this.identityDocumentRepository.findOne({
+      where: { userId, documentType: documentType as IdentityDocumentType },
+    });
+    const document = this.identityDocumentRepository.create({
+      ...(existing || { id: uuidv4(), userId }),
+      documentType: documentType as IdentityDocumentType,
+      storageKey,
+      originalFilename: file.originalname.slice(0, 255),
+      mimeType: file.mimetype,
+      fileSize: file.size,
+      status: IdentityDocumentStatus.PENDING,
+      reviewedAt: null,
+      reviewedBy: null,
+      rejectionReason: null,
+    });
+    const saved = await this.identityDocumentRepository.save(document);
+    return { ...saved, viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) };
+  }
+
+  async reviewIdentityDocument(
+    documentId: string,
+    status: string,
+    reviewedBy: string,
+    rejectionReason?: string,
+  ) {
+    if (![IdentityDocumentStatus.APPROVED, IdentityDocumentStatus.REJECTED].includes(status as IdentityDocumentStatus)) {
+      throw new BadRequestException('Identity documents can only be approved or rejected');
+    }
+    if (status === IdentityDocumentStatus.REJECTED && !rejectionReason?.trim()) {
+      throw new BadRequestException('A rejection reason is required');
+    }
+    const document = await this.identityDocumentRepository.findOne(documentId);
+    if (!document) {
+      throw new BadRequestException('Cannot find identity document');
+    }
+    document.status = status as IdentityDocumentStatus;
+    document.reviewedBy = reviewedBy;
+    document.reviewedAt = new Date();
+    document.rejectionReason = status === IdentityDocumentStatus.REJECTED ? rejectionReason.trim().slice(0, 500) : null;
+    const saved = await this.identityDocumentRepository.save(document);
+    return { ...saved, viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) };
+  }
+
+  private async ensureUserExists(userId: string) {
+    const user = await this.userRepository.findOne(userId);
+    if (!user) {
+      throw new BadRequestException(`Cannot find user of id ${userId}`);
+    }
+    return user;
+  }
   async register(user: UserDTO) {
     let entity = this.classMapper.map(user, UserDTO, User);
     entity.id = uuidv4();
@@ -78,6 +160,7 @@ export class UsersService {
     entity.password = await bcrypt.hash(DEFAULT_CREATED_USER_PASSWORD, salt);
 
     entity = await this.userRepository.save(entity);
+    return entity;
   }
 
   async update(user: UserDTO, id) {
@@ -100,6 +183,7 @@ export class UsersService {
     entity.verified = user.status == userStatus.ACTIVE;
     entity.age = moment().diff(entity.dob, `years`);
     entity = await this.userRepository.save(entity);
+    return entity;
   }
 
   async getUsers(filter: string, isCustomer: boolean, meta: MetaParam) {

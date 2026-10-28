@@ -1,9 +1,16 @@
-import { Injectable, Logger, Req, Res } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3 } from 'aws-sdk';
 import * as sharp from 'sharp';
 
 import { v4 as uuidv4 } from 'uuid';
+
+export interface UploadedIdentityFile {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+  size: number;
+}
 
 @Injectable()
 export class FilesService {
@@ -133,6 +140,42 @@ export class FilesService {
     } else {
       return res.status(500).json(`Failed to  upload file`);
     }
+  }
+
+  async uploadIdentityDocument(
+    file: UploadedIdentityFile,
+    userId: string,
+    documentType: string,
+  ): Promise<string> {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    const maxFileSize = 10 * 1024 * 1024;
+
+    if (!file || !allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Only JPG, PNG, and PDF identity documents are allowed');
+    }
+    if (file.size > maxFileSize) {
+      throw new BadRequestException('Identity documents must be 10 MB or smaller');
+    }
+
+    const extension = file.mimetype === 'application/pdf' ? 'pdf' : file.mimetype.split('/')[1];
+    const key = `identity-documents/${userId}/${documentType}-${uuidv4()}.${extension}`;
+    await this.uploadToAWS({
+      Body: file.buffer,
+      Bucket: 'halal-buket',
+      ACL: 'private',
+      ContentType: file.mimetype,
+      Key: key,
+      ServerSideEncryption: 'AES256',
+    });
+    return key;
+  }
+
+  getPrivateDocumentUrl(key: string): string {
+    return this.s3.getSignedUrl('getObject', {
+      Bucket: 'halal-buket',
+      Key: key,
+      Expires: 300,
+    });
   }
 
   async uploadImages(images, folder = 'images', resize = true) {

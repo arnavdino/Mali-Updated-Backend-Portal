@@ -118,6 +118,49 @@ export class AdminUserController {
     );
   }
 
+  @Get(':id/identity-documents')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.read, PermissionSubject.identity_document),
+  )
+  async getIdentityDocuments(@Request() req, @Response() res) {
+    return this.appService.formatResponse(
+      this.logger,
+      this.userService.getIdentityDocuments(req.params.id),
+      res,
+      `getting identity documents for ${req.params.id} by ${req.user.id}`,
+    );
+  }
+
+  @Post(':id/identity-documents')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.create, PermissionSubject.identity_document),
+  )
+  @UseInterceptors(FileInterceptor('upload', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async uploadIdentityDocument(@Request() req, @Response() res, @UploadedFile() file, @Body('documentType') documentType: string) {
+    return this.appService.formatResponse(
+      this.logger,
+      this.userService.addIdentityDocument(req.params.id, documentType, file),
+      res,
+      `uploading ${documentType} for ${req.params.id} by ${req.user.id}`,
+    );
+  }
+
+  @Put('identity-documents/:documentId/review')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.update, PermissionSubject.identity_document),
+  )
+  async reviewIdentityDocument(@Request() req, @Response() res, @Body() body: { status: string; rejectionReason?: string }) {
+    return this.appService.formatResponse(
+      this.logger,
+      this.userService.reviewIdentityDocument(req.params.documentId, body.status, req.user.id, body.rejectionReason),
+      res,
+      `reviewing identity document ${req.params.documentId} by ${req.user.id}`,
+    );
+  }
+
   @Delete(':id')
   @UseGuards(PoliciesGuard)
   @CheckPolicies((ability) =>

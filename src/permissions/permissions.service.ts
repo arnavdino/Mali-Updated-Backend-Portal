@@ -28,6 +28,10 @@ export class PermissionsService {
       subject: PermissionSubject.role,
       action: this.allActions,
     },
+    {
+      subject: PermissionSubject.identity_document,
+      action: this.allActions,
+    },
   ];
 
   findAll() {

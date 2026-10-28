@@ -14,6 +14,12 @@ export declare class AdminUserController {
     getUserVerification(req: any, res: any): Promise<import("../app-type").AppResponse>;
     verifyUser(req: any, res: any, user: any): Promise<import("../app-type").AppResponse>;
     uploadItem(req: any, res: any, file: any): Promise<any>;
+    getIdentityDocuments(req: any, res: any): Promise<import("../app-type").AppResponse>;
+    uploadIdentityDocument(req: any, res: any, file: any, documentType: string): Promise<import("../app-type").AppResponse>;
+    reviewIdentityDocument(req: any, res: any, body: {
+        status: string;
+        rejectionReason?: string;
+    }): Promise<import("../app-type").AppResponse>;
     deleteUser(req: any, res: any): Promise<import("../app-type").AppResponse>;
     deleteUsers(req: any, res: any, payload: {
         ids: string[];

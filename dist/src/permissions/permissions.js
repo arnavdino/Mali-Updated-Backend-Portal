@@ -30,6 +30,7 @@ var PermissionSubject;
     PermissionSubject["vendor"] = "vendor";
     PermissionSubject["warehouse"] = "warehouse";
     PermissionSubject["manager"] = "manager";
+    PermissionSubject["identity_document"] = "identity_document";
 })(PermissionSubject = exports.PermissionSubject || (exports.PermissionSubject = {}));
 const allActions = [
     PermissionAction.manage,
@@ -78,6 +79,10 @@ exports.permissions = [
             PermissionAction.refund_confirming,
             PermissionAction.refund_initiate,
         ],
+    },
+    {
+        subject: PermissionSubject.identity_document,
+        action: allActions,
     },
 ];
 //# sourceMappingURL=permissions.js.map

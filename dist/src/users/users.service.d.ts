@@ -7,12 +7,68 @@ import { EditUserDTO } from './edit-user.dto';
 import { MetaParam } from 'src/common/file/interfaces';
 import { RoleEntity } from 'src/roles/role.entity';
 import { LocationEntity } from './location.entity';
+import { IdentityDocumentStatus, IdentityDocumentType, UserIdentityDocument } from './user-identity-document.entity';
+import { FilesService, UploadedIdentityFile } from 'src/common/file/files.service';
 export declare class UsersService {
     private readonly classMapper;
     private userRepository;
+    private identityDocumentRepository;
     private roleService;
+    private filesService;
     private readonly logger;
-    constructor(classMapper: Mapper, userRepository: Repository<User>, roleService: RoleService);
+    constructor(classMapper: Mapper, userRepository: Repository<User>, identityDocumentRepository: Repository<UserIdentityDocument>, roleService: RoleService, filesService: FilesService);
+    getIdentityDocuments(userId: string): Promise<{
+        viewUrl: string;
+        id: string;
+        userId: string;
+        user: User;
+        documentType: IdentityDocumentType;
+        storageKey: string;
+        originalFilename: string;
+        mimeType: string;
+        fileSize: number;
+        status: IdentityDocumentStatus;
+        reviewedBy: string;
+        reviewedAt: Date;
+        rejectionReason: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    addIdentityDocument(userId: string, documentType: string, file: UploadedIdentityFile): Promise<{
+        viewUrl: string;
+        id: string;
+        userId: string;
+        user: User;
+        documentType: IdentityDocumentType;
+        storageKey: string;
+        originalFilename: string;
+        mimeType: string;
+        fileSize: number;
+        status: IdentityDocumentStatus;
+        reviewedBy: string;
+        reviewedAt: Date;
+        rejectionReason: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    reviewIdentityDocument(documentId: string, status: string, reviewedBy: string, rejectionReason?: string): Promise<{
+        viewUrl: string;
+        id: string;
+        userId: string;
+        user: User;
+        documentType: IdentityDocumentType;
+        storageKey: string;
+        originalFilename: string;
+        mimeType: string;
+        fileSize: number;
+        status: IdentityDocumentStatus;
+        reviewedBy: string;
+        reviewedAt: Date;
+        rejectionReason: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    private ensureUserExists;
     register(user: UserDTO): Promise<User>;
     getUserForVerification(userId: any): Promise<{
         email: string;
@@ -21,8 +77,8 @@ export declare class UsersService {
         lname: string;
         rewardPoints: number;
     }>;
-    createUser(user: UserDTO, creatorId: any): Promise<void>;
-    update(user: UserDTO, id: any): Promise<void>;
+    createUser(user: UserDTO, creatorId: any): Promise<User>;
+    update(user: UserDTO, id: any): Promise<User>;
     getUsers(filter: string, isCustomer: boolean, meta: MetaParam): Promise<{
         users: {
             role: {

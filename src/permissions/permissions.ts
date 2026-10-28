@@ -33,6 +33,7 @@ export enum PermissionSubject {
   vendor = 'vendor',
   warehouse = 'warehouse',
   manager = 'manager',
+  identity_document = 'identity_document',
 }
 const allActions = [
   PermissionAction.manage,
@@ -82,5 +83,9 @@ export const permissions: Permission[] = [
       PermissionAction.refund_confirming,
       PermissionAction.refund_initiate,
     ],
+  },
+  {
+    subject: PermissionSubject.identity_document,
+    action: allActions,
   },
 ];
