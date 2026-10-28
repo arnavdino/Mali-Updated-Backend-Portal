@@ -58,6 +58,9 @@ let AdminUserController = AdminUserController_1 = class AdminUserController {
     async reviewIdentityDocument(req, res, body) {
         return this.appService.formatResponse(this.logger, this.userService.reviewIdentityDocument(req.params.documentId, body.status, req.user.id, body.rejectionReason), res, `reviewing identity document ${req.params.documentId} by ${req.user.id}`);
     }
+    async removeIdentityDocument(req, res, reason) {
+        return this.appService.formatResponse(this.logger, this.userService.removeIdentityDocument(req.params.documentId, req.user.id, reason), res, `removing identity document ${req.params.documentId} by ${req.user.id}`);
+    }
     async deleteUser(req, res) {
         return this.appService.formatResponse(this.logger, this.userService.deleteUser(req.params.id), res, `deleting user ${req.params.id} by ${req.user.id} `);
     }
@@ -174,6 +177,17 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object, Object]),
     __metadata("design:returntype", Promise)
 ], AdminUserController.prototype, "reviewIdentityDocument", null);
+__decorate([
+    (0, common_1.Delete)('identity-documents/:documentId'),
+    (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),
+    (0, check_policy_decorator_1.CheckPolicies)((ability) => ability.can(permissions_1.PermissionAction.delete, permissions_1.PermissionSubject.identity_document)),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Response)()),
+    __param(2, (0, common_1.Body)('reason')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, String]),
+    __metadata("design:returntype", Promise)
+], AdminUserController.prototype, "removeIdentityDocument", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.UseGuards)(policy_guard_1.PoliciesGuard),

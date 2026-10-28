@@ -20,6 +20,7 @@ export declare class FilesService {
     fileupload(res: any, afterUpload: Function, file: any, folder?: string): Promise<any>;
     uploadIdentityDocument(file: UploadedIdentityFile, userId: string, documentType: string): Promise<string>;
     getPrivateDocumentUrl(key: string): string;
+    deletePrivateDocument(key: string): Promise<void>;
     private uploadIdentityDocumentToAWS;
     uploadImages(images: any, folder?: string, resize?: boolean): Promise<{
         imagesUrls: any[];

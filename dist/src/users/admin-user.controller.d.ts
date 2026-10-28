@@ -20,6 +20,7 @@ export declare class AdminUserController {
         status: string;
         rejectionReason?: string;
     }): Promise<import("../app-type").AppResponse>;
+    removeIdentityDocument(req: any, res: any, reason?: string): Promise<import("../app-type").AppResponse>;
     deleteUser(req: any, res: any): Promise<import("../app-type").AppResponse>;
     deleteUsers(req: any, res: any, payload: {
         ids: string[];

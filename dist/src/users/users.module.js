@@ -34,7 +34,7 @@ let UsersModule = class UsersModule {
 UsersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, user_identity_document_entity_1.UserIdentityDocument]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, user_identity_document_entity_1.UserIdentityDocument, user_identity_document_entity_1.UserIdentityDocumentRemovalAudit]),
             helpers_module_1.HelpersModule,
             stripe_module_1.StripeModule,
             events_module_1.EventsModule,

@@ -5,7 +5,10 @@ import { HelpersModule } from 'src/helpers/helpers.module';
 import { StripeModule } from 'src/stripe/stripe.module';
 import { UserController } from './user.controller';
 import { User } from './user.entity';
-import { UserIdentityDocument } from './user-identity-document.entity';
+import {
+  UserIdentityDocument,
+  UserIdentityDocumentRemovalAudit,
+} from './user-identity-document.entity';
 import { UserProfile } from './user.mapper';
 import { UsersService } from './users.service';
 import { RoleModule } from 'src/roles/role.module';
@@ -15,7 +18,7 @@ import { CaslModule } from 'src/casl/casl.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserIdentityDocument]),
+    TypeOrmModule.forFeature([User, UserIdentityDocument, UserIdentityDocumentRemovalAudit]),
     HelpersModule,
     StripeModule,
     EventsModule,

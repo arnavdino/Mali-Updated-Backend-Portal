@@ -22,6 +22,23 @@ export declare class UserIdentityDocument {
     reviewedBy: string | null;
     reviewedAt: Date | null;
     rejectionReason: string | null;
+    removedBy: string | null;
+    removedAt: Date | null;
+    removalReason: string | null;
     createdAt: Date;
     updatedAt: Date;
+}
+export declare class UserIdentityDocumentRemovalAudit {
+    id: string;
+    documentId: string;
+    userId: string;
+    documentType: IdentityDocumentType;
+    storageKey: string;
+    originalFilename: string;
+    mimeType: string;
+    fileSize: number;
+    documentStatus: IdentityDocumentStatus;
+    removedBy: string;
+    removedAt: Date;
+    removalReason: string | null;
 }

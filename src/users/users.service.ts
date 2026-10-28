@@ -5,7 +5,7 @@ import { UserDTO, hasLower, hasNumber, hasSpecial, hasUpper } from './user.dto';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Role, RoleService } from '../roles/role.service';
 import { EditUserDTO } from './edit-user.dto';
@@ -20,6 +20,7 @@ import {
   IdentityDocumentStatus,
   IdentityDocumentType,
   UserIdentityDocument,
+  UserIdentityDocumentRemovalAudit,
 } from './user-identity-document.entity';
 import { FilesService, UploadedIdentityFile } from 'src/common/file/files.service';
 import * as moment from 'moment-timezone';
@@ -35,6 +36,8 @@ export class UsersService {
     private userRepository: Repository<User>,
     @InjectRepository(UserIdentityDocument)
     private identityDocumentRepository: Repository<UserIdentityDocument>,
+    @InjectRepository(UserIdentityDocumentRemovalAudit)
+    private identityDocumentRemovalAuditRepository: Repository<UserIdentityDocumentRemovalAudit>,
     private roleService: RoleService,
     private filesService: FilesService,
   ) {}
@@ -42,7 +45,7 @@ export class UsersService {
   async getIdentityDocuments(userId: string) {
     await this.ensureUserExists(userId);
     const documents = await this.identityDocumentRepository.find({
-      where: { userId },
+      where: { userId, removedAt: IsNull() },
       order: { documentType: 'ASC' },
     });
     return documents.map((document) => ({
@@ -75,6 +78,9 @@ export class UsersService {
       reviewedAt: null,
       reviewedBy: null,
       rejectionReason: null,
+      removedAt: null,
+      removedBy: null,
+      removalReason: null,
     });
     const saved = await this.identityDocumentRepository.save(document);
     return { ...saved, viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) };
@@ -102,6 +108,46 @@ export class UsersService {
     document.rejectionReason = status === IdentityDocumentStatus.REJECTED ? rejectionReason.trim().slice(0, 500) : null;
     const saved = await this.identityDocumentRepository.save(document);
     return { ...saved, viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) };
+  }
+
+  async removeIdentityDocument(
+    documentId: string,
+    removedBy: string,
+    removalReason?: string,
+  ) {
+    const document = await this.identityDocumentRepository.findOne(documentId);
+    if (!document || document.removedAt) {
+      throw new BadRequestException('Cannot find active identity document');
+    }
+
+    // Remove the object first so the audit record never points to an accessible document.
+    await this.filesService.deletePrivateDocument(document.storageKey);
+
+    const removedAt = new Date();
+    const reason = removalReason?.trim().slice(0, 500) || null;
+    await this.identityDocumentRemovalAuditRepository.save(
+      this.identityDocumentRemovalAuditRepository.create({
+        id: uuidv4(),
+        documentId: document.id,
+        userId: document.userId,
+        documentType: document.documentType,
+        storageKey: document.storageKey,
+        originalFilename: document.originalFilename,
+        mimeType: document.mimeType,
+        fileSize: document.fileSize,
+        documentStatus: document.status,
+        removedBy,
+        removedAt,
+        removalReason: reason,
+      }),
+    );
+
+    document.removedBy = removedBy;
+    document.removedAt = removedAt;
+    document.removalReason = reason;
+    await this.identityDocumentRepository.save(document);
+
+    return { id: document.id, removedAt };
   }
 
   private async ensureUserExists(userId: string) {

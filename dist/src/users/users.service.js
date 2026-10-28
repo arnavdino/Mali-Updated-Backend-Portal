@@ -44,10 +44,11 @@ const files_service_1 = require("../common/file/files.service");
 const moment = require("moment-timezone");
 const DEFAULT_CREATED_USER_PASSWORD = 'Farmer2026!';
 let UsersService = UsersService_1 = class UsersService {
-    constructor(classMapper, userRepository, identityDocumentRepository, roleService, filesService) {
+    constructor(classMapper, userRepository, identityDocumentRepository, identityDocumentRemovalAuditRepository, roleService, filesService) {
         this.classMapper = classMapper;
         this.userRepository = userRepository;
         this.identityDocumentRepository = identityDocumentRepository;
+        this.identityDocumentRemovalAuditRepository = identityDocumentRemovalAuditRepository;
         this.roleService = roleService;
         this.filesService = filesService;
         this.logger = new common_1.Logger(UsersService_1.name);
@@ -55,7 +56,7 @@ let UsersService = UsersService_1 = class UsersService {
     async getIdentityDocuments(userId) {
         await this.ensureUserExists(userId);
         const documents = await this.identityDocumentRepository.find({
-            where: { userId },
+            where: { userId, removedAt: (0, typeorm_2.IsNull)() },
             order: { documentType: 'ASC' },
         });
         return documents.map((document) => (Object.assign(Object.assign({}, document), { viewUrl: this.filesService.getPrivateDocumentUrl(document.storageKey) })));
@@ -69,7 +70,7 @@ let UsersService = UsersService_1 = class UsersService {
         const existing = await this.identityDocumentRepository.findOne({
             where: { userId, documentType: documentType },
         });
-        const document = this.identityDocumentRepository.create(Object.assign(Object.assign({}, (existing || { id: (0, uuid_1.v4)(), userId })), { documentType: documentType, storageKey, originalFilename: file.originalname.slice(0, 255), mimeType: file.mimetype, fileSize: file.size, status: user_identity_document_entity_1.IdentityDocumentStatus.PENDING, reviewedAt: null, reviewedBy: null, rejectionReason: null }));
+        const document = this.identityDocumentRepository.create(Object.assign(Object.assign({}, (existing || { id: (0, uuid_1.v4)(), userId })), { documentType: documentType, storageKey, originalFilename: file.originalname.slice(0, 255), mimeType: file.mimetype, fileSize: file.size, status: user_identity_document_entity_1.IdentityDocumentStatus.PENDING, reviewedAt: null, reviewedBy: null, rejectionReason: null, removedAt: null, removedBy: null, removalReason: null }));
         const saved = await this.identityDocumentRepository.save(document);
         return Object.assign(Object.assign({}, saved), { viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) });
     }
@@ -90,6 +91,34 @@ let UsersService = UsersService_1 = class UsersService {
         document.rejectionReason = status === user_identity_document_entity_1.IdentityDocumentStatus.REJECTED ? rejectionReason.trim().slice(0, 500) : null;
         const saved = await this.identityDocumentRepository.save(document);
         return Object.assign(Object.assign({}, saved), { viewUrl: this.filesService.getPrivateDocumentUrl(saved.storageKey) });
+    }
+    async removeIdentityDocument(documentId, removedBy, removalReason) {
+        const document = await this.identityDocumentRepository.findOne(documentId);
+        if (!document || document.removedAt) {
+            throw new common_1.BadRequestException('Cannot find active identity document');
+        }
+        await this.filesService.deletePrivateDocument(document.storageKey);
+        const removedAt = new Date();
+        const reason = (removalReason === null || removalReason === void 0 ? void 0 : removalReason.trim().slice(0, 500)) || null;
+        await this.identityDocumentRemovalAuditRepository.save(this.identityDocumentRemovalAuditRepository.create({
+            id: (0, uuid_1.v4)(),
+            documentId: document.id,
+            userId: document.userId,
+            documentType: document.documentType,
+            storageKey: document.storageKey,
+            originalFilename: document.originalFilename,
+            mimeType: document.mimeType,
+            fileSize: document.fileSize,
+            documentStatus: document.status,
+            removedBy,
+            removedAt,
+            removalReason: reason,
+        }));
+        document.removedBy = removedBy;
+        document.removedAt = removedAt;
+        document.removalReason = reason;
+        await this.identityDocumentRepository.save(document);
+        return { id: document.id, removedAt };
     }
     async ensureUserExists(userId) {
         const user = await this.userRepository.findOne(userId);
@@ -509,7 +538,9 @@ UsersService = UsersService_1 = __decorate([
     __param(0, (0, nestjs_1.InjectMapper)()),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(2, (0, typeorm_1.InjectRepository)(user_identity_document_entity_1.UserIdentityDocument)),
+    __param(3, (0, typeorm_1.InjectRepository)(user_identity_document_entity_1.UserIdentityDocumentRemovalAudit)),
     __metadata("design:paramtypes", [Object, typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         role_service_1.RoleService,
         files_service_1.FilesService])

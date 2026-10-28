@@ -203,6 +203,12 @@ export class FilesService {
     });
   }
 
+  async deletePrivateDocument(key: string): Promise<void> {
+    await this.identityDocumentsS3
+      .deleteObject({ Bucket: this.identityDocumentsBucket, Key: key })
+      .promise();
+  }
+
   private uploadIdentityDocumentToAWS(props: S3.PutObjectRequest) {
     return this.identityDocumentsS3.upload(props).promise();
   }

@@ -7,16 +7,17 @@ import { EditUserDTO } from './edit-user.dto';
 import { MetaParam } from 'src/common/file/interfaces';
 import { RoleEntity } from 'src/roles/role.entity';
 import { LocationEntity } from './location.entity';
-import { IdentityDocumentStatus, IdentityDocumentType, UserIdentityDocument } from './user-identity-document.entity';
+import { IdentityDocumentStatus, IdentityDocumentType, UserIdentityDocument, UserIdentityDocumentRemovalAudit } from './user-identity-document.entity';
 import { FilesService, UploadedIdentityFile } from 'src/common/file/files.service';
 export declare class UsersService {
     private readonly classMapper;
     private userRepository;
     private identityDocumentRepository;
+    private identityDocumentRemovalAuditRepository;
     private roleService;
     private filesService;
     private readonly logger;
-    constructor(classMapper: Mapper, userRepository: Repository<User>, identityDocumentRepository: Repository<UserIdentityDocument>, roleService: RoleService, filesService: FilesService);
+    constructor(classMapper: Mapper, userRepository: Repository<User>, identityDocumentRepository: Repository<UserIdentityDocument>, identityDocumentRemovalAuditRepository: Repository<UserIdentityDocumentRemovalAudit>, roleService: RoleService, filesService: FilesService);
     getIdentityDocuments(userId: string): Promise<{
         viewUrl: string;
         id: string;
@@ -31,6 +32,9 @@ export declare class UsersService {
         reviewedBy: string;
         reviewedAt: Date;
         rejectionReason: string;
+        removedBy: string;
+        removedAt: Date;
+        removalReason: string;
         createdAt: Date;
         updatedAt: Date;
     }[]>;
@@ -48,6 +52,9 @@ export declare class UsersService {
         reviewedBy: string;
         reviewedAt: Date;
         rejectionReason: string;
+        removedBy: string;
+        removedAt: Date;
+        removalReason: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -65,8 +72,15 @@ export declare class UsersService {
         reviewedBy: string;
         reviewedAt: Date;
         rejectionReason: string;
+        removedBy: string;
+        removedAt: Date;
+        removalReason: string;
         createdAt: Date;
         updatedAt: Date;
+    }>;
+    removeIdentityDocument(documentId: string, removedBy: string, removalReason?: string): Promise<{
+        id: string;
+        removedAt: Date;
     }>;
     private ensureUserExists;
     register(user: UserDTO): Promise<User>;

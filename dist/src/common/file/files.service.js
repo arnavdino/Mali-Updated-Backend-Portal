@@ -179,6 +179,11 @@ let FilesService = FilesService_1 = class FilesService {
             Expires: 300,
         });
     }
+    async deletePrivateDocument(key) {
+        await this.identityDocumentsS3
+            .deleteObject({ Bucket: this.identityDocumentsBucket, Key: key })
+            .promise();
+    }
     uploadIdentityDocumentToAWS(props) {
         return this.identityDocumentsS3.upload(props).promise();
     }

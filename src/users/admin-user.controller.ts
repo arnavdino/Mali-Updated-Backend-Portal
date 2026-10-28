@@ -161,6 +161,20 @@ export class AdminUserController {
     );
   }
 
+  @Delete('identity-documents/:documentId')
+  @UseGuards(PoliciesGuard)
+  @CheckPolicies((ability) =>
+    ability.can(PermissionAction.delete, PermissionSubject.identity_document),
+  )
+  async removeIdentityDocument(@Request() req, @Response() res, @Body('reason') reason?: string) {
+    return this.appService.formatResponse(
+      this.logger,
+      this.userService.removeIdentityDocument(req.params.documentId, req.user.id, reason),
+      res,
+      `removing identity document ${req.params.documentId} by ${req.user.id}`,
+    );
+  }
+
   @Delete(':id')
   @UseGuards(PoliciesGuard)
   @CheckPolicies((ability) =>

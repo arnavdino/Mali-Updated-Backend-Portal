@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserIdentityDocument = exports.IdentityDocumentStatus = exports.IdentityDocumentType = void 0;
+exports.UserIdentityDocumentRemovalAudit = exports.UserIdentityDocument = exports.IdentityDocumentStatus = exports.IdentityDocumentType = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./user.entity");
 var IdentityDocumentType;
@@ -76,6 +76,18 @@ __decorate([
     __metadata("design:type", String)
 ], UserIdentityDocument.prototype, "rejectionReason", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'removed_by', nullable: true }),
+    __metadata("design:type", String)
+], UserIdentityDocument.prototype, "removedBy", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'removed_at', nullable: true, type: 'timestamp' }),
+    __metadata("design:type", Date)
+], UserIdentityDocument.prototype, "removedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'removal_reason', nullable: true, type: 'varchar', length: 500 }),
+    __metadata("design:type", String)
+], UserIdentityDocument.prototype, "removalReason", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at', type: 'timestamp' }),
     __metadata("design:type", Date)
 ], UserIdentityDocument.prototype, "createdAt", void 0);
@@ -88,4 +100,58 @@ UserIdentityDocument = __decorate([
     (0, typeorm_1.Index)(['userId', 'documentType'], { unique: true })
 ], UserIdentityDocument);
 exports.UserIdentityDocument = UserIdentityDocument;
+let UserIdentityDocumentRemovalAudit = class UserIdentityDocumentRemovalAudit {
+};
+__decorate([
+    (0, typeorm_1.PrimaryColumn)(),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'document_id' }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "documentId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'user_id' }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "userId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'document_type', length: 64 }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "documentType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'storage_key', length: 512 }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "storageKey", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'original_filename', length: 255 }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "originalFilename", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'mime_type', length: 128 }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "mimeType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'file_size', type: 'int' }),
+    __metadata("design:type", Number)
+], UserIdentityDocumentRemovalAudit.prototype, "fileSize", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'document_status', length: 32 }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "documentStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'removed_by' }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "removedBy", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'removed_at', type: 'timestamp' }),
+    __metadata("design:type", Date)
+], UserIdentityDocumentRemovalAudit.prototype, "removedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'removal_reason', nullable: true, type: 'varchar', length: 500 }),
+    __metadata("design:type", String)
+], UserIdentityDocumentRemovalAudit.prototype, "removalReason", void 0);
+UserIdentityDocumentRemovalAudit = __decorate([
+    (0, typeorm_1.Entity)('user_identity_document_removal_audit')
+], UserIdentityDocumentRemovalAudit);
+exports.UserIdentityDocumentRemovalAudit = UserIdentityDocumentRemovalAudit;
 //# sourceMappingURL=user-identity-document.entity.js.map
